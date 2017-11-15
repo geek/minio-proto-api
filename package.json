@@ -1,0 +1,31 @@
+{
+  "name": "minio-proto-api",
+  "version": "1.0.0",
+  "description": "",
+  "main": "./lib",
+  "scripts": {
+    "lint": "belly-button --fix",
+    "predev": "npm run graphdoc",
+    "dev": "NODE_ENV=development node -r ./.env.js --inspect dev-server.js",
+    "fake": "graphql-faker ./lib/schema.graphql -p 4000",
+    "faker": "graphql-faker ./lib/schema.graphql",
+    "graphdoc": "graphdoc -s ./lib/schema.graphql -o ./doc --force"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "graphi": "^4.1.0",
+    "graphql-tools": "^2.7.2"
+  },
+  "devDependencies": {
+    "@2fd/graphdoc": "^2.4.0",
+    "belly-button": "^4.0.1",
+    "hapi": "^16.6.2",
+    "hapi-pino": "^2.0.0",
+    "inert": "^4.0.0",
+    "graphql-faker": "^1.4.0",
+    "graphql-playground": "1.0.8",
+    "graphql-voyager": "^1.0.0-rc.9"
+  }
+}

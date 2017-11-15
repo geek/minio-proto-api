@@ -1,0 +1,18 @@
+input BridgeCreate {
+  accountId: String
+  instanceId: String
+}
+
+type BridgeInstance {
+  accountId: String
+  instanceId: String
+}
+
+type Query {
+  bridge (instanceId: String): BridgeInstance
+}
+
+
+type Mutation {
+  createBridge (bridge: BridgeCreate): BridgeInstance
+}
