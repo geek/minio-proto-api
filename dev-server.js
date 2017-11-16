@@ -2,12 +2,14 @@
 
 const Hapi = require('hapi');
 const HapiPino = require('hapi-pino');
+const Inert = require('inert');
 const Api = require('./');
 
 async function main () {
   const server = Hapi.server({ port: process.env.PORT || 80 });
 
   await server.register([
+    Inert,
     {
       plugin: HapiPino,
       options: {
@@ -17,6 +19,22 @@ async function main () {
     {
       plugin: Api,
       options: { db: { database: 'minio' } }
+    }
+  ]);
+
+  server.route([
+    {
+      method: 'GET',
+      path: '/doc/{param*}',
+      config: {
+        handler: {
+          directory: {
+            path: './doc',
+            redirectToSlash: true,
+            index: true
+          }
+        }
+      }
     }
   ]);
 
