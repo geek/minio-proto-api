@@ -1,11 +1,20 @@
 input BridgeCreate {
-  accountId: String
-  instanceId: String
+  instanceId: String!
+  accountId: String!
+  username: String!
+  namespace: String!
+  sshKey: String!
+  accessKey: String!
+  secretKey: String!
+  directoryMap: String!
 }
 
 type BridgeInstance {
-  accountId: String
-  instanceId: String
+  instanceId: String!
+  accountId: String!
+  username: String!
+  namespace: String!
+  directoryMap: String!
 }
 
 type Query {
