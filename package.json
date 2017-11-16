@@ -18,7 +18,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "graphi": "4.1.0",
+    "graphi": "5.0.0",
     "graphql-tools": "2.7.2",
     "mysql": "2.15.0"
   },
@@ -27,11 +27,8 @@
     "belly-button": "4.x.x",
     "code": "5.x.x",
     "graphql-faker": "1.x.x",
-    "graphql-playground": "1.x.x",
-    "graphql-voyager": "^1.0.0-rc.9",
     "hapi": "17.x.x",
-    "hapi-pino": "2.x.x",
-    "inert": "4.x.x",
+    "hapi-pino": "3.x.x",
     "lab": "15.x.x"
   }
 }

@@ -1,73 +1,28 @@
 'use strict';
 
-const { hapi: Playground } = require('graphql-playground/middleware');
-const { hapi: Voyager } = require('graphql-voyager/middleware');
 const Hapi = require('hapi');
 const HapiPino = require('hapi-pino');
-const Inert = require('inert');
 const Api = require('./');
 
+async function main () {
+  const server = Hapi.server({ port: process.env.PORT || 80 });
 
-const server = new Hapi.Server();
-
-const handlerError = (err) => {
-  if (err) {
-    // eslint-disable-next-line no-console
-    console.error(err);
-    process.exit(1);
-  }
-};
-
-server.connection({ port: process.env.PORT || 80 });
-
-server.register(
-  [
+  await server.register([
     {
-      register: HapiPino,
+      plugin: HapiPino,
       options: {
         logEvents: ['request-error', 'error', 'graqhql-error']
       }
     },
-    Inert,
     {
-      register: Playground,
-      options: {
-        path: '/playground',
-        endpointUrl: '/graphql'
-      }
-    },
-    {
-      register: Voyager,
-      options: {
-        path: '/voyager',
-        endpointUrl: '/graphql'
-      }
-    },
-    Api
-  ],
-  (err) => {
-    handlerError(err);
+      plugin: Api,
+      options: { db: { database: 'minio' } }
+    }
+  ]);
 
-    server.route([
-      {
-        method: 'GET',
-        path: '/doc/{param*}',
-        config: {
-          handler: {
-            directory: {
-              path: './doc',
-              redirectToSlash: true,
-              index: true
-            }
-          }
-        }
-      }
-    ]);
+  await server.start();
+  // eslint-disable-next-line no-console
+  console.log(`server started at http://localhost:${server.info.port}`);
+}
 
-    server.start((err) => {
-      handlerError(err);
-      // eslint-disable-next-line no-console
-      console.log(`server started at http://localhost:${server.info.port}`);
-    });
-  }
-);
+main();

@@ -7,18 +7,18 @@ const { expect } = require('code');
 const Api = require('../');
 
 
-async function createServer (options) {
+function createServer (options) {
   const server = Hapi.server();
 
   options = Object.assign({ db: { database: 'minio' } }, options);
-  await server.register({ plugin: Api, options });
+  server.register({ plugin: Api, options });
   return server;
 }
 
 
 describe('Minio API', () => {
-  it('registers the API plugin', async () => {
-    const server = await createServer();
+  it('registers the API plugin', () => {
+    const server = createServer();
     const plugin = server.registrations['minio-proto-api'];
 
     expect(plugin).to.be.an.object();
