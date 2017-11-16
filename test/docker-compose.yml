@@ -1,0 +1,9 @@
+version: '2.1'
+
+services:
+  mysql:
+    image: mysql:8
+    mem_limit: 512m
+    restart: always
+    ports:
+      - 3306:3306
