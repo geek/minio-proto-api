@@ -29,4 +29,27 @@ describe('Minio API', () => {
 
     expect(plugin).to.be.an.object();
   });
+
+  it('can create a new instance', async () => {
+    const server = createServer();
+    const payload = { query: `
+      mutation {
+        createBridge(bridge: {
+            instanceId: "999",
+              accountId: "888",
+              username: "jjohnson",
+              namespace: "abc123",
+              directoryMap: "*:/stor/*",
+          sshKey: "12:c3:de:ad:be:ef",
+          accessKey: "foobar",
+          secretKey: "bazquux"
+        }) {
+          instanceId, accountId
+        }
+      }`
+    };
+
+    const res = await server.inject({ method: 'POST', url: '/graphql', payload });
+    console.log(res.payload);
+  });
 });
