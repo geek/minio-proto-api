@@ -10,7 +10,13 @@ const Api = require('../');
 function createServer (options) {
   const server = Hapi.server();
 
-  options = Object.assign({ db: { database: 'minio' } }, options);
+  options = Object.assign({
+    db: {
+      user: 'test-user',
+      password: 'test-pass',
+      database: 'test-db'
+    }
+  }, options);
   server.register({ plugin: Api, options });
   return server;
 }

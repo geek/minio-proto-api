@@ -4,20 +4,24 @@
   "description": "",
   "main": "./lib",
   "scripts": {
+    "compose-up": "docker-compose -f test/docker-compose.yml up -d",
+    "compose-down": "docker-compose -f test/docker-compose.yml down",
     "lint": "belly-button --fix -I 'node_modules/**' -I 'doc/**'",
-    "predev": "npm run graphdoc",
+    "predev": "npm run graphdoc && npm run compose-up",
     "dev": "NODE_ENV=development node -r ./.env.js --inspect dev-server.js",
+    "postdev": "npm run compose-down",
     "fake": "graphql-faker ./lib/schema.graphql -p 4000",
     "faker": "graphql-faker ./lib/schema.graphql",
     "graphdoc": "graphdoc -s ./lib/schema.graphql -o ./doc --force",
-    "pretest": "docker-compose -f test/docker-compose.yml up -d",
+    "pretest": "npm run compose-up",
     "test": "npm run lint && lab -v -a code -t 96",
-    "posttest": "docker-compose -f test/docker-compose.yml down"
+    "posttest": "npm run compose-down"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "cb-barrier": "1.0.2",
     "graphi": "5.0.0",
     "graphql-tools": "2.7.2",
     "mysql": "2.15.0"

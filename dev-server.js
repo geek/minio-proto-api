@@ -18,7 +18,13 @@ async function main () {
     },
     {
       plugin: Api,
-      options: { db: { database: 'minio' } }
+      options: {
+        db: {
+          user: 'test-user',
+          password: 'test-pass',
+          database: 'test-db'
+        }
+      }
     }
   ]);
 
