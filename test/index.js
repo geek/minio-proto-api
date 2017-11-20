@@ -35,7 +35,7 @@ describe('Minio API', () => {
     const payload = { query: `
       mutation {
         createBridge(bridge: {
-          instanceId: "999",
+          instanceId: ["1234", "5678"],
           accountId: "888",
           username: "jjohnson",
           namespace: "abc123",
@@ -44,13 +44,46 @@ describe('Minio API', () => {
           accessKey: "foobar",
           secretKey: "bazquux"
         }) {
-          instanceId, accountId
+          bridgeId, instanceId, accountId, username, namespace, directoryMap
         }
       }`
     };
 
     const res = await server.inject({ method: 'POST', url: '/graphql', payload });
-    const body = JSON.parse(res.payload);
-    expect(body.data.createBridge.instanceId).to.equal('999');
+    const data = JSON.parse(res.payload).data.createBridge;
+
+    expect(data.bridgeId).to.be.a.string();
+    expect(data.bridgeId.length).to.equal(36);
+    expect(data.instanceId).to.equal(['1234', '5678']);
+    expect(data.accountId).to.equal('888');
+    expect(data.username).to.equal('jjohnson');
+    expect(data.namespace).to.equal('abc123');
+    expect(data.directoryMap).to.equal('*:/stor/*');
+  });
+
+  it('rejects the wrong number of instance IDs', async () => {
+    const server = createServer();
+    const payload = { query: `
+      mutation {
+        createBridge(bridge: {
+          instanceId: ["1234", "5678", "9999"],
+          accountId: "888",
+          username: "jjohnson",
+          namespace: "abc123",
+          directoryMap: "*:/stor/*",
+          sshKey: "12:c3:de:ad:be:ef",
+          accessKey: "foobar",
+          secretKey: "bazquux"
+        }) {
+          instanceId
+        }
+      }`
+    };
+
+    const res = await server.inject({ method: 'POST', url: '/graphql', payload });
+    const result = JSON.parse(res.payload);
+
+    expect(result.data.createBridge).to.equal(null);
+    expect(result.errors[0].message).to.equal('two instance IDs are required');
   });
 });

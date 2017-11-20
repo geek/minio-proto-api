@@ -1,5 +1,5 @@
 input BridgeCreate {
-  instanceId: String!
+  instanceId: [String]!
   accountId: String!
   username: String!
   namespace: String!
@@ -10,7 +10,8 @@ input BridgeCreate {
 }
 
 type BridgeInstance {
-  instanceId: String!
+  bridgeId: String!
+  instanceId: [String]!
   accountId: String!
   username: String!
   namespace: String!
@@ -18,7 +19,7 @@ type BridgeInstance {
 }
 
 type Query {
-  bridge (instanceId: String): BridgeInstance
+  bridge (bridgeId: String): BridgeInstance
 }
 
 

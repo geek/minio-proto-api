@@ -21,11 +21,13 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "boom": "7.1.1",
     "cb-barrier": "1.0.2",
     "dockerode": "2.5.3",
     "graphi": "5.0.0",
     "graphql-tools": "2.7.2",
-    "mysql": "2.15.0"
+    "mysql": "2.15.0",
+    "uuid": "3.1.0"
   },
   "devDependencies": {
     "@2fd/graphdoc": "2.x.x",
