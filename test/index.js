@@ -35,11 +35,11 @@ describe('Minio API', () => {
     const payload = { query: `
       mutation {
         createBridge(bridge: {
-            instanceId: "999",
-              accountId: "888",
-              username: "jjohnson",
-              namespace: "abc123",
-              directoryMap: "*:/stor/*",
+          instanceId: "999",
+          accountId: "888",
+          username: "jjohnson",
+          namespace: "abc123",
+          directoryMap: "*:/stor/*",
           sshKey: "12:c3:de:ad:be:ef",
           accessKey: "foobar",
           secretKey: "bazquux"
