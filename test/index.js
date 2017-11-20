@@ -30,7 +30,7 @@ describe('Minio API', () => {
     expect(plugin).to.be.an.object();
   });
 
-  it('can create a new instance', async () => {
+  it('creates a new instance', async () => {
     const server = createServer();
     const payload = { query: `
       mutation {
@@ -85,5 +85,51 @@ describe('Minio API', () => {
 
     expect(result.data.createBridge).to.equal(null);
     expect(result.errors[0].message).to.equal('two instance IDs are required');
+  });
+
+  it('retrieves an existing bridge', async () => {
+    const server = createServer();
+    const mutation = { query: `
+      mutation {
+        createBridge(bridge: {
+          instanceId: ["1234", "5678"],
+          accountId: "888",
+          username: "jjohnson",
+          namespace: "abc123",
+          directoryMap: "*:/stor/*",
+          sshKey: "12:c3:de:ad:be:ef",
+          accessKey: "foobar",
+          secretKey: "bazquux"
+        }) {
+          bridgeId
+        }
+      }`
+    };
+    const create = await server.inject({
+      method: 'POST',
+      url: '/graphql',
+      payload: mutation
+    });
+    const bridgeId = JSON.parse(create.payload).data.createBridge.bridgeId;
+    const query = { query: `
+      query {
+        bridge(bridgeId: "${bridgeId}") {
+          bridgeId, instanceId, accountId, username, namespace, directoryMap
+        }
+      }`
+    };
+    const res = await server.inject({
+      method: 'POST',
+      url: '/graphql',
+      payload: query
+    });
+    const data = JSON.parse(res.payload).data.bridge;
+
+    expect(data.bridgeId).to.equal(bridgeId);
+    expect(data.instanceId).to.equal(['1234', '5678']);
+    expect(data.accountId).to.equal('888');
+    expect(data.username).to.equal('jjohnson');
+    expect(data.namespace).to.equal('abc123');
+    expect(data.directoryMap).to.equal('*:/stor/*');
   });
 });
