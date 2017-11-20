@@ -50,6 +50,7 @@ describe('Minio API', () => {
     };
 
     const res = await server.inject({ method: 'POST', url: '/graphql', payload });
-    console.log(res.payload);
+    const body = JSON.parse(res.payload);
+    expect(body.data.createBridge.instanceId).to.equal('999');
   });
 });
