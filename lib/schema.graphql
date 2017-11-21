@@ -19,11 +19,12 @@ type BridgeInstance {
 }
 
 type Query {
-  bridge (bridgeId: String): BridgeInstance,
-  listBridgesByAccount (accountId: String) : [BridgeInstance]
+  bridge (bridgeId: String!): BridgeInstance,
+  listBridgesByAccount (accountId: String!) : [BridgeInstance]
 }
 
 
 type Mutation {
-  createBridge (bridge: BridgeCreate): BridgeInstance
+  createBridge (bridge: BridgeCreate!): BridgeInstance,
+  deleteBridge (bridgeId: String!): Boolean
 }

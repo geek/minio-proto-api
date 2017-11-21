@@ -184,4 +184,47 @@ describe('Minio API', () => {
     expect(data.some((bridge) => { return bridge.bridgeId === bridgeId1; })).to.equal(true);
     expect(data.some((bridge) => { return bridge.bridgeId === bridgeId2; })).to.equal(true);
   });
+
+  it('deletes bridges', async () => {
+    const server = createServer();
+    const mutation = { query: `
+      mutation {
+        createBridge(bridge: {
+          instanceId: ["1234", "5678"],
+          accountId: "123456789",
+          username: "ppluck",
+          namespace: "abc123",
+          directoryMap: "*:/stor/*",
+          sshKey: "12:c3:de:ad:be:ef",
+          accessKey: "foobar",
+          secretKey: "bazquux"
+        }) {
+          bridgeId
+        }
+      }`
+    };
+    const create = await server.inject({
+      method: 'POST',
+      url: '/graphql',
+      payload: mutation
+    });
+    const bridgeId = JSON.parse(create.payload).data.createBridge.bridgeId;
+    const query = { query: `
+      mutation {
+        deleteBridge(bridgeId: "${bridgeId}")
+      }`
+    };
+    let res = await server.inject({
+      method: 'POST',
+      url: '/graphql',
+      payload: query
+    });
+    expect(JSON.parse(res.payload).data.deleteBridge).to.equal(true);
+    res = await server.inject({
+      method: 'POST',
+      url: '/graphql',
+      payload: query
+    });
+    expect(JSON.parse(res.payload).data.deleteBridge).to.equal(false);
+  });
 });
