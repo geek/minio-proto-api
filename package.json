@@ -37,6 +37,7 @@
     "hapi": "17.x.x",
     "hapi-pino": "3.x.x",
     "inert": "5.x.x",
-    "lab": "15.x.x"
+    "lab": "15.x.x",
+    "minio-proto-auth": "1.x.x"
   }
 }

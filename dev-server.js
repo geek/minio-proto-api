@@ -3,6 +3,7 @@
 const Hapi = require('hapi');
 const HapiPino = require('hapi-pino');
 const Inert = require('inert');
+const Sso = require('minio-proto-auth');
 const Api = require('./');
 
 async function main () {
@@ -10,6 +11,17 @@ async function main () {
 
   await server.register([
     Inert,
+    {
+      plugin: Sso,
+      options: {
+        sso: {
+          isDev: true,
+          keyPath: process.env.SDC_KEY_PATH,
+          keyId: process.env.SDC_KEY_ID,
+          apiBaseUrl: process.env.SDC_URL
+        }
+      }
+    },
     {
       plugin: HapiPino,
       options: {
@@ -44,8 +56,9 @@ async function main () {
     }
   ]);
 
+  server.auth.default('sso');
+
   await server.start();
-  // eslint-disable-next-line no-console
   console.log(`server started at http://localhost:${server.info.port}`);
 }
 
