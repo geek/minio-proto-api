@@ -19,7 +19,8 @@ type BridgeInstance {
 }
 
 type Query {
-  bridge (bridgeId: String): BridgeInstance
+  bridge (bridgeId: String): BridgeInstance,
+  listBridgesByAccount (accountId: String) : [BridgeInstance]
 }
 
 
