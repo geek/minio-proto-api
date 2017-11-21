@@ -14,6 +14,12 @@ async function main () {
     {
       plugin: Sso,
       options: {
+        cookie: {
+          password: process.env.COOKIE_PASSWORD,
+          isSecure: false,
+          isHttpOnly: true,
+          ttl: 1000 * 60 * 60       // 1 hour
+        },
         sso: {
           isDev: true,
           keyPath: process.env.SDC_KEY_PATH,
