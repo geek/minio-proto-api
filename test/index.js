@@ -1,14 +1,28 @@
 'use strict';
+const Path = require('path');
 const Hapi = require('hapi');
 const Lab = require('lab');
+const Sso = require('minio-proto-auth');
 const Uuid = require('uuid');
 const lab = exports.lab = Lab.script();
-const { describe, it } = lab;
+const { describe, it, before, after } = lab;
 const { expect } = require('code');
 const Api = require('../');
+const authAccount = {
+  id: 'b89d9dd3-62ce-4f6f-eb0d-f78e57d515d9',
+  login: 'barbar',
+  email: 'barbar@example.com',
+  companyName: 'Example Inc',
+  firstName: 'BarBar',
+  lastName: 'Jinks',
+  phone: '123-456-7890',
+  updated: '2015-12-21T11:48:54.884Z',
+  created: '2015-12-21T11:48:54.884Z'
+};
+let authServer = null;
 
 
-function createServer (options) {
+async function createServer (options) {
   const server = Hapi.server();
 
   options = Object.assign({
@@ -18,26 +32,73 @@ function createServer (options) {
       database: 'test-db'
     }
   }, options);
-  server.register({ plugin: Api, options });
+
+  await server.register([
+    {
+      plugin: Sso,
+      options: {
+        cookie: {
+          password: 'cookiepasscookiepasscookiepass12',
+          isSecure: false,
+          isHttpOnly: true,
+          ttl: 1000 * 60 * 60 // 1 hour
+        },
+        sso: {
+          isDev: true,
+          keyPath: Path.join(__dirname, 'key-fixture'),
+          keyId: '/peterpluck/keys/3f:45:ac:88:92:cc:dd:ee:ff:de:ad:be:ef:12:34:56',
+          apiBaseUrl: `http://localhost:${authServer.info.port}`
+        }
+      }
+    },
+    { plugin: Api, options }
+  ]);
+
+  server.auth.default('sso');
+
+  return server;
+}
+
+
+function createAuthServer () {
+  const server = Hapi.server();
+
+  server.route({
+    method: 'GET',
+    path: '/my',
+    handler: function (request, h) {
+      return authAccount;
+    }
+  });
+
   return server;
 }
 
 
 describe('Minio API', () => {
-  it('registers the API plugin', () => {
-    const server = createServer();
+  before(async () => {
+    authServer = createAuthServer();
+    await authServer.start();
+  });
+
+  after(async () => {
+    await authServer.stop();
+    authServer = null;
+  });
+
+  it('registers the API plugin', async () => {
+    const server = await createServer();
     const plugin = server.registrations['minio-proto-api'];
 
     expect(plugin).to.be.an.object();
   });
 
   it('creates a new instance', async () => {
-    const server = createServer();
+    const server = await createServer();
     const payload = { query: `
       mutation {
         createBridge(bridge: {
           instanceId: ["1234", "5678"],
-          accountId: "888",
           username: "jjohnson",
           namespace: "abc123",
           directoryMap: "*:/stor/*",
@@ -50,25 +111,25 @@ describe('Minio API', () => {
       }`
     };
 
+    authAccount.id = Uuid.v4();
     const res = await server.inject({ method: 'POST', url: '/graphql', payload });
     const data = JSON.parse(res.payload).data.createBridge;
 
     expect(data.bridgeId).to.be.a.string();
     expect(data.bridgeId.length).to.equal(36);
     expect(data.instanceId).to.equal(['1234', '5678']);
-    expect(data.accountId).to.equal('888');
+    expect(data.accountId).to.equal(authAccount.id);
     expect(data.username).to.equal('jjohnson');
     expect(data.namespace).to.equal('abc123');
     expect(data.directoryMap).to.equal('*:/stor/*');
   });
 
   it('rejects the wrong number of instance IDs', async () => {
-    const server = createServer();
+    const server = await createServer();
     const payload = { query: `
       mutation {
         createBridge(bridge: {
           instanceId: ["1234", "5678", "9999"],
-          accountId: "888",
           username: "jjohnson",
           namespace: "abc123",
           directoryMap: "*:/stor/*",
@@ -89,12 +150,11 @@ describe('Minio API', () => {
   });
 
   it('retrieves an existing bridge', async () => {
-    const server = createServer();
+    const server = await createServer();
     const mutation = { query: `
       mutation {
         createBridge(bridge: {
           instanceId: ["1234", "5678"],
-          accountId: "888",
           username: "jjohnson",
           namespace: "abc123",
           directoryMap: "*:/stor/*",
@@ -106,6 +166,7 @@ describe('Minio API', () => {
         }
       }`
     };
+    authAccount.id = Uuid.v4();
     const create = await server.inject({
       method: 'POST',
       url: '/graphql',
@@ -128,20 +189,18 @@ describe('Minio API', () => {
 
     expect(data.bridgeId).to.equal(bridgeId);
     expect(data.instanceId).to.equal(['1234', '5678']);
-    expect(data.accountId).to.equal('888');
+    expect(data.accountId).to.equal(authAccount.id);
     expect(data.username).to.equal('jjohnson');
     expect(data.namespace).to.equal('abc123');
     expect(data.directoryMap).to.equal('*:/stor/*');
   });
 
   it('lists all bridges for user', async () => {
-    const server = createServer();
-    const accountId = Uuid.v4();
+    const server = await createServer();
     const mutation = { query: `
       mutation {
         createBridge(bridge: {
           instanceId: ["1234", "5678"],
-          accountId: "${accountId}",
           username: "jjohnson",
           namespace: "abc123",
           directoryMap: "*:/stor/*",
@@ -153,6 +212,7 @@ describe('Minio API', () => {
         }
       }`
     };
+    authAccount.id = Uuid.v4();
     let create = await server.inject({
       method: 'POST',
       url: '/graphql',
@@ -167,7 +227,7 @@ describe('Minio API', () => {
     const bridgeId2 = JSON.parse(create.payload).data.createBridge.bridgeId;
     const query = { query: `
       query {
-        listBridgesByAccount(accountId: "${accountId}") {
+        listBridgesByAccount {
           bridgeId
         }
       }`
@@ -186,12 +246,11 @@ describe('Minio API', () => {
   });
 
   it('deletes bridges', async () => {
-    const server = createServer();
+    const server = await createServer();
     const mutation = { query: `
       mutation {
         createBridge(bridge: {
           instanceId: ["1234", "5678"],
-          accountId: "123456789",
           username: "ppluck",
           namespace: "abc123",
           directoryMap: "*:/stor/*",
@@ -203,6 +262,7 @@ describe('Minio API', () => {
         }
       }`
     };
+    authAccount.id = Uuid.v4();
     const create = await server.inject({
       method: 'POST',
       url: '/graphql',

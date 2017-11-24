@@ -1,6 +1,5 @@
 input BridgeCreate {
   instanceId: [String]!
-  accountId: String!
   username: String!
   namespace: String!
   sshKey: String!
@@ -20,7 +19,7 @@ type BridgeInstance {
 
 type Query {
   bridge (bridgeId: String!): BridgeInstance,
-  listBridgesByAccount (accountId: String!) : [BridgeInstance]
+  listBridgesByAccount : [BridgeInstance]
 }
 
 
