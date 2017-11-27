@@ -5,7 +5,7 @@
   "main": "./lib",
   "scripts": {
     "compose-up": "docker-compose -f test/docker-compose.yml up -d",
-    "compose-down": "docker-compose -f test/docker-compose.yml down",
+    "compose-down": "docker-compose -f test/docker-compose.yml down -v",
     "lint": "belly-button --fix -I 'node_modules/**' -I 'doc/**'",
     "predev": "npm run graphdoc && npm run compose-up",
     "dev": "NODE_ENV=development node -r ./.env.js --inspect dev-server.js",
@@ -25,7 +25,7 @@
     "cb-barrier": "1.0.2",
     "dockerode": "2.5.3",
     "graphi": "5.0.0",
-    "graphql-tools": "2.8.0",
+    "graphql-tools": "^2.9.0",
     "mysql": "2.15.0",
     "reach": "1.0.0",
     "uuid": "3.1.0"

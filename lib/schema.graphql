@@ -1,16 +1,6 @@
-input BridgeCreate {
-  instanceId: [String]!
-  username: String!
-  namespace: String!
-  sshKey: String!
-  accessKey: String!
-  secretKey: String!
-  directoryMap: String!
-}
-
-type BridgeInstance {
+type Bridge {
   bridgeId: String!
-  instanceId: [String]!
+  containerId: [String]
   accountId: String!
   username: String!
   namespace: String!
@@ -18,12 +8,19 @@ type BridgeInstance {
 }
 
 type Query {
-  bridge (bridgeId: String!): BridgeInstance,
-  listBridgesByAccount : [BridgeInstance]
+  bridge (bridgeId: String!): Bridge,
+  listBridgesByAccount: [Bridge]
 }
 
 
 type Mutation {
-  createBridge (bridge: BridgeCreate!): BridgeInstance,
+  createBridge (
+    username: String!
+    namespace: String!
+    sshKey: String!
+    accessKey: String!
+    secretKey: String!
+    directoryMap: String!
+  ): Bridge,
   deleteBridge (bridgeId: String!): Boolean
 }

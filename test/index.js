@@ -1,9 +1,12 @@
 'use strict';
+
 const Path = require('path');
 const Hapi = require('hapi');
 const Lab = require('lab');
 const Sso = require('minio-proto-auth');
 const Uuid = require('uuid');
+
+
 const lab = exports.lab = Lab.script();
 const { describe, it, before, after } = lab;
 const { expect } = require('code');
@@ -93,20 +96,19 @@ describe('Minio API', () => {
     expect(plugin).to.be.an.object();
   });
 
-  it('creates a new instance', async () => {
+  it('creates a new bridge', async () => {
     const server = await createServer();
     const payload = { query: `
       mutation {
-        createBridge(bridge: {
-          instanceId: ["1234", "5678"],
+        createBridge(
           username: "jjohnson",
           namespace: "abc123",
           directoryMap: "*:/stor/*",
           sshKey: "12:c3:de:ad:be:ef",
           accessKey: "foobar",
           secretKey: "bazquux"
-        }) {
-          bridgeId, instanceId, accountId, username, namespace, directoryMap
+        ) {
+          bridgeId, containerId, accountId, username, namespace, directoryMap
         }
       }`
     };
@@ -117,51 +119,24 @@ describe('Minio API', () => {
 
     expect(data.bridgeId).to.be.a.string();
     expect(data.bridgeId.length).to.equal(36);
-    expect(data.instanceId).to.equal(['1234', '5678']);
     expect(data.accountId).to.equal(authAccount.id);
     expect(data.username).to.equal('jjohnson');
     expect(data.namespace).to.equal('abc123');
     expect(data.directoryMap).to.equal('*:/stor/*');
   });
 
-  it('rejects the wrong number of instance IDs', async () => {
-    const server = await createServer();
-    const payload = { query: `
-      mutation {
-        createBridge(bridge: {
-          instanceId: ["1234", "5678", "9999"],
-          username: "jjohnson",
-          namespace: "abc123",
-          directoryMap: "*:/stor/*",
-          sshKey: "12:c3:de:ad:be:ef",
-          accessKey: "foobar",
-          secretKey: "bazquux"
-        }) {
-          instanceId
-        }
-      }`
-    };
-
-    const res = await server.inject({ method: 'POST', url: '/graphql', payload });
-    const result = JSON.parse(res.payload);
-
-    expect(result.data.createBridge).to.equal(null);
-    expect(result.errors[0].message).to.equal('two instance IDs are required');
-  });
-
   it('retrieves an existing bridge', async () => {
     const server = await createServer();
     const mutation = { query: `
       mutation {
-        createBridge(bridge: {
-          instanceId: ["1234", "5678"],
+        createBridge(
           username: "jjohnson",
           namespace: "abc123",
           directoryMap: "*:/stor/*",
           sshKey: "12:c3:de:ad:be:ef",
           accessKey: "foobar",
           secretKey: "bazquux"
-        }) {
+        ) {
           bridgeId
         }
       }`
@@ -176,7 +151,7 @@ describe('Minio API', () => {
     const query = { query: `
       query {
         bridge(bridgeId: "${bridgeId}") {
-          bridgeId, instanceId, accountId, username, namespace, directoryMap
+          bridgeId, containerId, accountId, username, namespace, directoryMap
         }
       }`
     };
@@ -188,7 +163,7 @@ describe('Minio API', () => {
     const data = JSON.parse(res.payload).data.bridge;
 
     expect(data.bridgeId).to.equal(bridgeId);
-    expect(data.instanceId).to.equal(['1234', '5678']);
+    expect(data.containerId).to.exist();
     expect(data.accountId).to.equal(authAccount.id);
     expect(data.username).to.equal('jjohnson');
     expect(data.namespace).to.equal('abc123');
@@ -199,15 +174,14 @@ describe('Minio API', () => {
     const server = await createServer();
     const mutation = { query: `
       mutation {
-        createBridge(bridge: {
-          instanceId: ["1234", "5678"],
+        createBridge(
           username: "jjohnson",
           namespace: "abc123",
           directoryMap: "*:/stor/*",
           sshKey: "12:c3:de:ad:be:ef",
           accessKey: "foobar",
           secretKey: "bazquux"
-        }) {
+        ) {
           bridgeId
         }
       }`
@@ -249,15 +223,14 @@ describe('Minio API', () => {
     const server = await createServer();
     const mutation = { query: `
       mutation {
-        createBridge(bridge: {
-          instanceId: ["1234", "5678"],
+        createBridge(
           username: "ppluck",
           namespace: "abc123",
           directoryMap: "*:/stor/*",
           sshKey: "12:c3:de:ad:be:ef",
           accessKey: "foobar",
           secretKey: "bazquux"
-        }) {
+        ) {
           bridgeId
         }
       }`

@@ -29,10 +29,7 @@ async function main () {
       }
     },
     {
-      plugin: HapiPino,
-      options: {
-        logEvents: ['request-error', 'error', 'graqhql-error']
-      }
+      plugin: HapiPino
     },
     {
       plugin: Api,
