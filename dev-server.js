@@ -4,6 +4,7 @@ const Hapi = require('hapi');
 const HapiPino = require('hapi-pino');
 const Inert = require('inert');
 const Sso = require('minio-proto-auth');
+const Allowed = require('./.allowed');
 const Api = require('./');
 
 async function main () {
@@ -62,7 +63,24 @@ async function main () {
   server.auth.default('sso');
 
   await server.start();
-  console.log(`server started at http://localhost:${server.info.port}`);
+
+  server.app.mysql.query('DELETE FROM accounts;', (err) => {
+    if (err) {
+      console.error(err);
+      return;
+    }
+
+    const values = new Array(Allowed.length).fill('(?)').join(',');
+    const sql = `INSERT INTO accounts VALUES ${values};`;
+    server.app.mysql.query(sql, Allowed, (err) => {
+      if (err) {
+        console.error(err);
+        return;
+      }
+
+      console.log(`server started at http://localhost:${server.info.port}`);
+    });
+  });
 }
 
 main();

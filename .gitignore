@@ -60,3 +60,6 @@ typings/
 doc
 
 .DS_Store
+
+# exports allowed account IDs
+.allowed.js

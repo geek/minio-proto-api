@@ -11,3 +11,8 @@ CREATE TABLE bridges (
   directoryMap TEXT NOT NULL,
   PRIMARY KEY (bridgeId)
 );
+
+CREATE TABLE accounts (
+  accountId CHAR(36) NOT NULL,
+  PRIMARY KEY (accountId)
+);

@@ -1,6 +1,7 @@
 'use strict';
 
 const Path = require('path');
+const Barrier = require('cb-barrier');
 const Hapi = require('hapi');
 const Lab = require('lab');
 const Sso = require('minio-proto-auth');
@@ -59,7 +60,24 @@ async function createServer (options) {
 
   server.auth.default('sso');
 
-  return server;
+  const barrier = new Barrier();
+  server.app.mysql.query('DELETE FROM accounts;', (err) => {
+    if (err) {
+      return barrier.pass(err);
+    }
+
+    const values = new Array(1).fill('(?)').join(',');
+    const sql = `INSERT INTO accounts VALUES ${values};`;
+    server.app.mysql.query(sql, authAccount.id, (err) => {
+      if (err) {
+        return barrier.pass(err);
+      }
+
+      barrier.pass(server);
+    });
+  });
+
+  return barrier;
 }
 
 
@@ -113,7 +131,6 @@ describe('Minio API', () => {
       }`
     };
 
-    authAccount.id = Uuid.v4();
     const res = await server.inject({ method: 'POST', url: '/graphql', payload });
     const data = JSON.parse(res.payload).data.createBridge;
 
@@ -141,7 +158,7 @@ describe('Minio API', () => {
         }
       }`
     };
-    authAccount.id = Uuid.v4();
+
     const create = await server.inject({
       method: 'POST',
       url: '/graphql',
@@ -172,6 +189,17 @@ describe('Minio API', () => {
 
   it('lists all bridges for user', async () => {
     const server = await createServer();
+    const barrier = new Barrier();
+    server.app.mysql.query('DELETE FROM bridges;', (err) => {
+      if (err) {
+        return barrier.pass(err);
+      }
+
+      barrier.pass();
+    });
+
+    await barrier;
+
     const mutation = { query: `
       mutation {
         createBridge(
@@ -186,7 +214,7 @@ describe('Minio API', () => {
         }
       }`
     };
-    authAccount.id = Uuid.v4();
+
     let create = await server.inject({
       method: 'POST',
       url: '/graphql',
@@ -235,7 +263,7 @@ describe('Minio API', () => {
         }
       }`
     };
-    authAccount.id = Uuid.v4();
+
     const create = await server.inject({
       method: 'POST',
       url: '/graphql',

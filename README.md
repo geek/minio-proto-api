@@ -15,6 +15,13 @@ process.env.DOCKER_HOST = 'tcp://us-sw-1.docker.joyent.com:2376';
 process.env.DOCKER_TLS_VERIFY = '1';
 ```
 
+Create a local `.allowed.js` file with the list of allowed account Ids:
+```js
+module.exports = [
+  'YOUR ACCOUNT ID'
+];
+```
+
 ```sh
 $ npm run dev
 ```
