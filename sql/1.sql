@@ -4,6 +4,7 @@ CREATE TABLE bridges (
   container2Id CHAR(64) NULL,  -- a separate table at a later time.
   accountId CHAR(36) NOT NULL,
   username VARCHAR(255) NOT NULL,
+  name VARCHAR(255) NOT NULL,
   namespace TEXT NOT NULL,
   sshKey TEXT NOT NULL,
   accessKey CHAR(36) NOT NULL,

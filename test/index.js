@@ -5,6 +5,7 @@ const Barrier = require('cb-barrier');
 const Hapi = require('hapi');
 const Lab = require('lab');
 const Sso = require('minio-proto-auth');
+const Uuid = require('uuid');
 
 
 const lab = exports.lab = Lab.script();
@@ -12,7 +13,7 @@ const { describe, it, before, after } = lab;
 const { expect } = require('code');
 const Api = require('../');
 const authAccount = {
-  id: 'b89d9dd3-62ce-4f6f-eb0d-f78e57d515d9',
+  id: Uuid.v4(),
   login: 'barbar',
   email: 'barbar@example.com',
   companyName: 'Example Inc',
@@ -65,14 +66,20 @@ async function createServer (options) {
       return barrier.pass(err);
     }
 
-    const values = new Array(1).fill('(?)').join(',');
-    const sql = `INSERT INTO accounts VALUES ${values};`;
-    server.app.mysql.query(sql, authAccount.id, (err) => {
+    server.app.mysql.query('DELETE FROM bridges;', (err) => {
       if (err) {
         return barrier.pass(err);
       }
 
-      barrier.pass(server);
+      const values = new Array(1).fill('(?)').join(',');
+      const sql = `INSERT INTO accounts VALUES ${values};`;
+      server.app.mysql.query(sql, authAccount.id, (err) => {
+        if (err) {
+          return barrier.pass(err);
+        }
+
+        barrier.pass(server);
+      });
     });
   });
 
@@ -120,12 +127,13 @@ describe('Minio API', () => {
         createBridge(
           username: "jjohnson",
           namespace: "abc123",
+          name: "foo",
           directoryMap: "*:/stor/*",
           sshKey: "12:c3:de:ad:be:ef",
           accessKey: "foobar",
           secretKey: "bazquux"
         ) {
-          bridgeId, containerId, accountId, username, namespace, directoryMap
+          bridgeId, containerId, accountId, username, namespace, name, directoryMap
         }
       }`
     };
@@ -138,6 +146,7 @@ describe('Minio API', () => {
     expect(data.accountId).to.equal(authAccount.id);
     expect(data.username).to.equal('jjohnson');
     expect(data.namespace).to.equal('abc123');
+    expect(data.name).to.equal('foo');
     expect(data.directoryMap).to.equal('*:/stor/*');
   });
 
@@ -148,6 +157,7 @@ describe('Minio API', () => {
         createBridge(
           username: "jjohnson",
           namespace: "abc123",
+          name: "foo",
           directoryMap: "*:/stor/*",
           sshKey: "12:c3:de:ad:be:ef",
           accessKey: "foobar",
@@ -167,7 +177,7 @@ describe('Minio API', () => {
     const query = { query: `
       query {
         bridge(bridgeId: "${bridgeId}") {
-          bridgeId, containerId, accountId, username, namespace, directoryMap
+          bridgeId, containerId, accountId, username, namespace, name, directoryMap
         }
       }`
     };
@@ -183,6 +193,7 @@ describe('Minio API', () => {
     expect(data.accountId).to.equal(authAccount.id);
     expect(data.username).to.equal('jjohnson');
     expect(data.namespace).to.equal('abc123');
+    expect(data.name).to.equal('foo');
     expect(data.directoryMap).to.equal('*:/stor/*');
   });
 
@@ -204,6 +215,7 @@ describe('Minio API', () => {
         createBridge(
           username: "jjohnson",
           namespace: "abc123",
+          name: "foo",
           directoryMap: "*:/stor/*",
           sshKey: "12:c3:de:ad:be:ef",
           accessKey: "foobar",
@@ -253,6 +265,7 @@ describe('Minio API', () => {
         createBridge(
           username: "ppluck",
           namespace: "abc123",
+          name: "foo",
           directoryMap: "*:/stor/*",
           sshKey: "12:c3:de:ad:be:ef",
           accessKey: "foobar",
