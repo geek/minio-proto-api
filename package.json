@@ -14,7 +14,7 @@
     "faker": "graphql-faker ./lib/schema.graphql",
     "graphdoc": "graphdoc -s ./lib/schema.graphql -o ./doc --force",
     "pretest": "npm run compose-up",
-    "test": "node -r ./.env.js node_modules/.bin/lab -v -a code -t 96",
+    "test": "npm run lint && node -r ./.env.js node_modules/.bin/lab -v -a code -t 96",
     "posttest": "npm run compose-down"
   },
   "keywords": [],

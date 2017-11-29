@@ -5,7 +5,6 @@ const Barrier = require('cb-barrier');
 const Hapi = require('hapi');
 const Lab = require('lab');
 const Sso = require('minio-proto-auth');
-const Uuid = require('uuid');
 
 
 const lab = exports.lab = Lab.script();
