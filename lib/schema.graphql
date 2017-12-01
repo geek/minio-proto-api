@@ -3,6 +3,7 @@ type Bridge {
   containerId: [String]
   accountId: String!
   username: String!
+  sshKeyId: String!
   namespace: String!
   name: String!
   directoryMap: String!
@@ -16,10 +17,8 @@ type Query {
 
 type Mutation {
   createBridge (
-    username: String!
     namespace: String!
     name: String!
-    sshKey: String!
     accessKey: String!
     secretKey: String!
     directoryMap: String!

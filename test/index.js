@@ -6,12 +6,15 @@ const Hapi = require('hapi');
 const Lab = require('lab');
 const Sso = require('minio-proto-auth');
 const Uuid = require('uuid');
+const Api = require('../');
 
 
+// test shortcuts
 const lab = exports.lab = Lab.script();
 const { describe, it, before, after } = lab;
 const { expect } = require('code');
-const Api = require('../');
+
+
 const authAccount = {
   id: Uuid.v4(),
   login: 'barbar',
@@ -23,18 +26,21 @@ const authAccount = {
   updated: '2015-12-21T11:48:54.884Z',
   created: '2015-12-21T11:48:54.884Z'
 };
-let authServer = null;
+const fingerprint = 'bb:0d:44:47:7c:01:95:89:6e:a4:6c:29:68:b4:4b:d0';
+let cloudapiServer = null;
 
 
 async function createServer (options) {
   const server = Hapi.server();
+  const cloudapiUrl = `http://localhost:${cloudapiServer.info.port}`;
 
   options = Object.assign({
     db: {
       user: 'test-user',
       password: 'test-pass',
       database: 'test-db'
-    }
+    },
+    cloudapiUrl
   }, options);
 
   await server.register([
@@ -51,7 +57,7 @@ async function createServer (options) {
           isDev: true,
           keyPath: Path.join(__dirname, 'key-fixture'),
           keyId: '/peterpluck/keys/3f:45:ac:88:92:cc:dd:ee:ff:de:ad:be:ef:12:34:56',
-          apiBaseUrl: `http://localhost:${authServer.info.port}`
+          apiBaseUrl: cloudapiUrl
         }
       }
     },
@@ -87,7 +93,7 @@ async function createServer (options) {
 }
 
 
-function createAuthServer () {
+function createCloudapiServer () {
   const server = Hapi.server();
 
   server.route({
@@ -98,42 +104,60 @@ function createAuthServer () {
     }
   });
 
+  server.route({
+    method: 'POST',
+    path: '/my/keys',
+    handler: function (request, h) {
+      return {
+        name: request.payload.name,
+        fingerprint,
+        key: request.payload.key
+      };
+    }
+  });
+
+  server.route({
+    method: 'DELETE',
+    path: '/my/keys/{name}',
+    handler: function (request, h) {
+      return h.continue;
+    }
+  });
+
   return server;
 }
 
 
 describe('Minio API', () => {
   before(async () => {
-    authServer = createAuthServer();
-    await authServer.start();
+    cloudapiServer = createCloudapiServer();
+    await cloudapiServer.start();
   });
 
   after(async () => {
-    await authServer.stop();
-    authServer = null;
+    await cloudapiServer.stop();
+    cloudapiServer = null;
   });
 
   it('registers the API plugin', async () => {
     const server = await createServer();
-    const plugin = server.registrations['minio-proto-api'];
+    const plugin = server.registrations.api;
 
     expect(plugin).to.be.an.object();
   });
 
-  it('creates a new bridge', async () => {
+  it('creates a new bridge', { timeout: 20000 }, async () => {
     const server = await createServer();
     const payload = { query: `
       mutation {
         createBridge(
-          username: "jjohnson",
           namespace: "abc123",
           name: "foo",
           directoryMap: "*:/stor/*",
-          sshKey: "12:c3:de:ad:be:ef",
           accessKey: "foobar",
           secretKey: "bazquux"
         ) {
-          bridgeId, containerId, accountId, username, namespace, name, directoryMap
+          bridgeId, containerId, accountId, username, sshKeyId, namespace, name, directoryMap
         }
       }`
     };
@@ -144,22 +168,21 @@ describe('Minio API', () => {
     expect(data.bridgeId).to.be.a.string();
     expect(data.bridgeId.length).to.equal(36);
     expect(data.accountId).to.equal(authAccount.id);
-    expect(data.username).to.equal('jjohnson');
+    expect(data.username).to.equal(authAccount.login);
     expect(data.namespace).to.equal('abc123');
+    expect(data.sshKeyId).to.contain(fingerprint);
     expect(data.name).to.equal('foo');
     expect(data.directoryMap).to.equal('*:/stor/*');
   });
 
-  it('retrieves an existing bridge', async () => {
+  it('retrieves an existing bridge', { timeout: 20000 }, async () => {
     const server = await createServer();
     const mutation = { query: `
       mutation {
         createBridge(
-          username: "jjohnson",
           namespace: "abc123",
           name: "foo",
           directoryMap: "*:/stor/*",
-          sshKey: "12:c3:de:ad:be:ef",
           accessKey: "foobar",
           secretKey: "bazquux"
         ) {
@@ -177,7 +200,7 @@ describe('Minio API', () => {
     const query = { query: `
       query {
         bridge(bridgeId: "${bridgeId}") {
-          bridgeId, containerId, accountId, username, namespace, name, directoryMap
+          bridgeId, containerId, accountId, username, namespace, sshKeyId, name, directoryMap
         }
       }`
     };
@@ -191,13 +214,14 @@ describe('Minio API', () => {
     expect(data.bridgeId).to.equal(bridgeId);
     expect(data.containerId).to.exist();
     expect(data.accountId).to.equal(authAccount.id);
-    expect(data.username).to.equal('jjohnson');
+    expect(data.username).to.equal(authAccount.login);
+    expect(data.sshKeyId).to.contain(fingerprint);
     expect(data.namespace).to.equal('abc123');
     expect(data.name).to.equal('foo');
     expect(data.directoryMap).to.equal('*:/stor/*');
   });
 
-  it('lists all bridges for user', async () => {
+  it('lists all bridges for user', { timeout: 20000 }, async () => {
     const server = await createServer();
     const barrier = new Barrier();
     server.app.mysql.query('DELETE FROM bridges;', (err) => {
@@ -213,11 +237,9 @@ describe('Minio API', () => {
     const mutation = { query: `
       mutation {
         createBridge(
-          username: "jjohnson",
           namespace: "abc123",
           name: "foo",
           directoryMap: "*:/stor/*",
-          sshKey: "12:c3:de:ad:be:ef",
           accessKey: "foobar",
           secretKey: "bazquux"
         ) {
@@ -258,16 +280,14 @@ describe('Minio API', () => {
     expect(data.some((bridge) => { return bridge.bridgeId === bridgeId2; })).to.equal(true);
   });
 
-  it('deletes bridges', async () => {
+  it('deletes bridges', { timeout: 20000 }, async () => {
     const server = await createServer();
     const mutation = { query: `
       mutation {
         createBridge(
-          username: "ppluck",
           namespace: "abc123",
           name: "foo",
           directoryMap: "*:/stor/*",
-          sshKey: "12:c3:de:ad:be:ef",
           accessKey: "foobar",
           secretKey: "bazquux"
         ) {
