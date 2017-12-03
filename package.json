@@ -25,7 +25,7 @@
     "cb-barrier": "1.0.2",
     "dockerode": "2.5.3",
     "graphi": "5.0.0",
-    "graphql-tools": "2.9.0",
+    "graphql-tools": "2.11.0",
     "keypair": "1.0.1",
     "mysql": "2.15.0",
     "node-forge": "0.7.1",
