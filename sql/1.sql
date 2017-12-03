@@ -16,6 +16,16 @@ CREATE TABLE bridges (
 );
 
 
+CREATE TABLE bridge_usage (
+  accountId CHAR(36) NOT NULL,
+  bridgeId CHAR(36) NOT NULL,       -- bridge id cannot be a foreign key due to deletions
+  created DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  deleted DATETIME NULL,
+  PRIMARY KEY (bridgeId),
+  INDEX (accountId)
+);
+
+
 CREATE TABLE accounts (
   accountId CHAR(36) NOT NULL,
   PRIMARY KEY (accountId)
@@ -69,8 +79,29 @@ CREATE PROCEDURE update_containers_in_bridge (
   bridge_id CHAR(36)
 )
 BEGIN
-  UPDATE bridges SET container1Id = container1, container2Id = container2
-  WHERE bridgeId = bridge_id;
+  DECLARE account_id CHAR(36);
+  DECLARE rows_updated INT;
+  DECLARE EXIT HANDLER FOR SQLEXCEPTION
+  BEGIN
+    ROLLBACK;
+  END;
+
+  START TRANSACTION;
+    -- Get the account associated with the bridge.
+    SELECT accountId INTO account_id FROM bridges
+    WHERE bridgeId = bridge_id;
+
+    -- Add the usage data.
+    INSERT INTO bridge_usage (accountId, bridgeId)
+    VALUES (account_id, bridge_id);
+
+    -- Associate the containers with the bridge.
+    UPDATE bridges SET container1Id = container1, container2Id = container2
+    WHERE bridgeId = bridge_id;
+    SELECT ROW_COUNT() INTO rows_updated;
+
+    SELECT rows_updated;
+  COMMIT;
 END$$
 
 DELIMITER ;
@@ -98,7 +129,21 @@ CREATE PROCEDURE delete_bridge (
   account_id CHAR(36)
 )
 BEGIN
-  DELETE FROM bridges WHERE bridgeId = bridge_id AND accountId = account_id;
+  DECLARE rows_deleted INT;
+  DECLARE EXIT HANDLER FOR SQLEXCEPTION
+  BEGIN
+    ROLLBACK;
+  END;
+
+  START TRANSACTION;
+    DELETE FROM bridges WHERE bridgeId = bridge_id AND accountId = account_id;
+    SELECT ROW_COUNT() INTO rows_deleted;
+
+    UPDATE bridge_usage SET deleted = CURRENT_TIMESTAMP()
+    WHERE bridgeId = bridge_id;
+
+    SELECT rows_deleted;
+  COMMIT;
 END$$
 
 DELIMITER ;
@@ -113,6 +158,18 @@ BEGIN
   SELECT bridgeId, container1Id, container2Id, accountId, username, sshKeyName,
          sshKeyId, namespace, name, directoryMap
   FROM bridges WHERE accountId = account_id;
+END$$
+
+DELIMITER ;
+
+
+DELIMITER $$
+
+CREATE PROCEDURE get_usage_by_account (
+  account_id CHAR(36)
+)
+BEGIN
+  SELECT * FROM bridge_usage WHERE accountId = account_id;
 END$$
 
 DELIMITER ;

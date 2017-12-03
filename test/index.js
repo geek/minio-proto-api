@@ -5,6 +5,7 @@ const Barrier = require('cb-barrier');
 const Hapi = require('hapi');
 const Lab = require('lab');
 const Sso = require('minio-proto-auth');
+const Reach = require('reach');
 const Uuid = require('uuid');
 const Api = require('../');
 
@@ -125,6 +126,21 @@ function createCloudapiServer () {
   });
 
   return server;
+}
+
+
+async function getUsageByAccount (accountId, server) { // eslint-disable-line require-await
+  const barrier = new Barrier();
+
+  server.app.mysql.query('CALL get_usage_by_account(?)', [accountId], (err, results) => {
+    if (err) {
+      return barrier.pass(err);
+    }
+
+    barrier.pass(results);
+  });
+
+  return barrier;
 }
 
 
@@ -319,5 +335,69 @@ describe('Minio API', () => {
       payload: query
     });
     expect(JSON.parse(res.payload).data.deleteBridge).to.equal(false);
+  });
+
+  it('tracks bridge usage', { timeout: 20000 }, async () => {
+    function waitForUsageData (accountId, server) {
+      const barrier = new Barrier();
+      const interval = setInterval(async () => {
+        const usageResults = await getUsageByAccount(accountId, server);
+        const usage = Reach(usageResults, '0.0');
+
+        if (usage !== undefined) {
+          clearInterval(interval);
+          barrier.pass(usage);
+        }
+      }, 500);
+
+      return barrier;
+    }
+
+    const server = await createServer();
+    const mutation = { query: `
+      mutation {
+        createBridge(
+          namespace: "abc123",
+          name: "foo",
+          directoryMap: "*:/stor/*",
+          accessKey: "foobar",
+          secretKey: "bazquux"
+        ) {
+          bridgeId, accountId
+        }
+      }`
+    };
+
+    const create = await server.inject({
+      method: 'POST',
+      url: '/graphql',
+      payload: mutation
+    });
+    const { bridgeId, accountId } = JSON.parse(create.payload).data.createBridge;
+    const createUsage = await waitForUsageData(accountId, server);
+
+    expect(createUsage.accountId).to.equal(accountId);
+    expect(createUsage.bridgeId).to.equal(bridgeId);
+    expect(createUsage.created).to.be.a.date();
+    expect(createUsage.deleted).to.equal(null);
+
+    const query = { query: `
+      mutation {
+        deleteBridge(bridgeId: "${bridgeId}")
+      }`
+    };
+    const res = await server.inject({
+      method: 'POST',
+      url: '/graphql',
+      payload: query
+    });
+
+    expect(JSON.parse(res.payload).data.deleteBridge).to.equal(true);
+    const deleteUsage = await waitForUsageData(accountId, server);
+
+    expect(deleteUsage.accountId).to.equal(accountId);
+    expect(deleteUsage.bridgeId).to.equal(bridgeId);
+    expect(deleteUsage.created).to.equal(createUsage.created);
+    expect(deleteUsage.deleted).to.be.a.date();
   });
 });
