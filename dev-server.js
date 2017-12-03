@@ -64,7 +64,7 @@ async function main () {
 
   await server.start();
 
-  server.app.mysql.query('DELETE FROM accounts;', (err) => {
+  server.app.mysql.query('CALL delete_all_accounts_from_table()', (err) => {
     if (err) {
       console.error(err);
       return;

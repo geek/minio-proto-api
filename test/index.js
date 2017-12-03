@@ -67,12 +67,12 @@ async function createServer (options) {
   server.auth.default('sso');
 
   const barrier = new Barrier();
-  server.app.mysql.query('DELETE FROM accounts;', (err) => {
+  server.app.mysql.query('CALL delete_all_accounts_from_table()', (err) => {
     if (err) {
       return barrier.pass(err);
     }
 
-    server.app.mysql.query('DELETE FROM bridges;', (err) => {
+    server.app.mysql.query('CALL delete_all_bridges_from_table()', (err) => {
       if (err) {
         return barrier.pass(err);
       }
@@ -224,7 +224,7 @@ describe('Minio API', () => {
   it('lists all bridges for user', { timeout: 20000 }, async () => {
     const server = await createServer();
     const barrier = new Barrier();
-    server.app.mysql.query('DELETE FROM bridges;', (err) => {
+    server.app.mysql.query('CALL delete_all_bridges_from_table()', (err) => {
       if (err) {
         return barrier.pass(err);
       }

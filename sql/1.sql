@@ -15,7 +15,124 @@ CREATE TABLE bridges (
   PRIMARY KEY (bridgeId)
 );
 
+
 CREATE TABLE accounts (
   accountId CHAR(36) NOT NULL,
   PRIMARY KEY (accountId)
 );
+
+
+DELIMITER $$
+
+CREATE PROCEDURE does_account_exist (
+  account_id CHAR(36)
+)
+BEGIN
+  -- According to Stack Overflow, this is a fast way to check existence.
+  -- https://stackoverflow.com/questions/1676551/best-way-to-test-if-a-row-exists-in-a-mysql-table
+  SELECT EXISTS(SELECT 1 FROM accounts WHERE accountId = account_id LIMIT 1);
+END$$
+
+DELIMITER ;
+
+
+DELIMITER $$
+
+CREATE PROCEDURE create_bridge (
+  bridge_id CHAR(36),
+  account_id CHAR(36),
+  username VARCHAR(255),
+  namespace TEXT,
+  name VARCHAR(255),
+  ssh_key TEXT,
+  ssh_key_name VARCHAR(255),
+  ssh_key_id VARCHAR(255),
+  access_key CHAR(36),
+  secret_key CHAR(36),
+  directory_map TEXT
+)
+BEGIN
+  INSERT INTO bridges (bridgeId, accountId, username, namespace, name, sshKey,
+                       sshKeyName, sshKeyId, accessKey, secretKey, directoryMap)
+  VALUES (bridge_id, account_id, username, namespace, name, ssh_key,
+          ssh_key_name, ssh_key_id, access_key, secret_key, directory_map);
+END$$
+
+DELIMITER ;
+
+
+DELIMITER $$
+
+CREATE PROCEDURE update_containers_in_bridge (
+  container1 CHAR(64),
+  container2 CHAR(64),
+  bridge_id CHAR(36)
+)
+BEGIN
+  UPDATE bridges SET container1Id = container1, container2Id = container2
+  WHERE bridgeId = bridge_id;
+END$$
+
+DELIMITER ;
+
+
+DELIMITER $$
+
+CREATE PROCEDURE get_bridge (
+  bridge_id CHAR(36),
+  account_id CHAR(36)
+)
+BEGIN
+  SELECT bridgeId, container1Id, container2Id, accountId, username, sshKeyName,
+         sshKeyId, namespace, name, directoryMap
+  FROM bridges WHERE bridgeId = bridge_id AND accountId = account_id;
+END$$
+
+DELIMITER ;
+
+
+DELIMITER $$
+
+CREATE PROCEDURE delete_bridge (
+  bridge_id CHAR(36),
+  account_id CHAR(36)
+)
+BEGIN
+  DELETE FROM bridges WHERE bridgeId = bridge_id AND accountId = account_id;
+END$$
+
+DELIMITER ;
+
+
+DELIMITER $$
+
+CREATE PROCEDURE list_bridges_by_account (
+  account_id CHAR(36)
+)
+BEGIN
+  SELECT bridgeId, container1Id, container2Id, accountId, username, sshKeyName,
+         sshKeyId, namespace, name, directoryMap
+  FROM bridges WHERE accountId = account_id;
+END$$
+
+DELIMITER ;
+
+
+DELIMITER $$
+
+CREATE PROCEDURE delete_all_bridges_from_table ()
+BEGIN
+  DELETE FROM bridges;
+END$$
+
+DELIMITER ;
+
+
+DELIMITER $$
+
+CREATE PROCEDURE delete_all_accounts_from_table ()
+BEGIN
+  DELETE FROM accounts;
+END$$
+
+DELIMITER ;
