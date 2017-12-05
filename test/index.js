@@ -78,14 +78,28 @@ async function createServer (options) {
         return barrier.pass(err);
       }
 
-      const values = new Array(1).fill('(?)').join(',');
-      const sql = `INSERT INTO accounts VALUES ${values};`;
-      server.app.mysql.query(sql, authAccount.id, (err) => {
+      server.app.mysql.query('CALL delete_all_bridge_usage_from_table()', (err) => {
         if (err) {
           return barrier.pass(err);
         }
 
-        barrier.pass(server);
+        const values = new Array(1).fill('(?)').join(',');
+        const sql = `INSERT INTO accounts VALUES ${values};`;
+        server.app.mysql.query(sql, authAccount.id, (err) => {
+          if (err) {
+            return barrier.pass(err);
+          }
+
+          // Make sure that each server is using a different account ID.
+          // The fact that operations continue after the server responds means
+          // that data can be added to the database between tests. For example,
+          // one test can complete, but container related operations may
+          // continue to update the database. The next test could then have
+          // unexpected usage data associated with the same account.
+          authAccount.id = Uuid.v4();
+
+          barrier.pass(server);
+        });
       });
     });
   });
@@ -139,6 +153,22 @@ async function getUsageByAccount (accountId, server) { // eslint-disable-line re
 
     barrier.pass(results);
   });
+
+  return barrier;
+}
+
+
+function waitForUsageData (accountId, server) {
+  const barrier = new Barrier();
+  const interval = setInterval(async () => {
+    const usageResults = await getUsageByAccount(accountId, server);
+    const usage = Reach(usageResults, '0.0');
+
+    if (usage !== undefined) {
+      clearInterval(interval);
+      barrier.pass(usage);
+    }
+  }, 500);
 
   return barrier;
 }
@@ -338,21 +368,6 @@ describe('Minio API', () => {
   });
 
   it('tracks bridge usage', { timeout: 20000 }, async () => {
-    function waitForUsageData (accountId, server) {
-      const barrier = new Barrier();
-      const interval = setInterval(async () => {
-        const usageResults = await getUsageByAccount(accountId, server);
-        const usage = Reach(usageResults, '0.0');
-
-        if (usage !== undefined) {
-          clearInterval(interval);
-          barrier.pass(usage);
-        }
-      }, 500);
-
-      return barrier;
-    }
-
     const server = await createServer();
     const mutation = { query: `
       mutation {
@@ -373,6 +388,7 @@ describe('Minio API', () => {
       url: '/graphql',
       payload: mutation
     });
+
     const { bridgeId, accountId } = JSON.parse(create.payload).data.createBridge;
     const createUsage = await waitForUsageData(accountId, server);
 
@@ -416,5 +432,74 @@ describe('Minio API', () => {
     expect(deleteUsage.bridgeId).to.equal(bridgeId);
     expect(deleteUsage.started).to.equal(createUsage.started);
     expect(deleteUsage.stopped).to.be.a.date();
+  });
+
+  it('bridges can be stopped', { timeout: 20000 }, async () => {
+    const server = await createServer();
+    const mutation = { query: `
+      mutation {
+        createBridge(
+          namespace: "abc123",
+          name: "foo",
+          directoryMap: "*:/stor/*",
+          accessKey: "foobar",
+          secretKey: "bazquux"
+        ) {
+          bridgeId, accountId, status
+        }
+      }`
+    };
+
+    const create = await server.inject({
+      method: 'POST',
+      url: '/graphql',
+      payload: mutation
+    });
+
+    const createBridge = JSON.parse(create.payload).data.createBridge;
+    const bridgeId = createBridge.bridgeId;
+    expect(createBridge.status).to.equal('STARTING');
+    const createUsage = await waitForUsageData(createBridge.accountId, server);
+    expect(createUsage.bridgeId).to.equal(bridgeId);
+
+    const getQuery = { query: `
+      query {
+        bridge(bridgeId: "${bridgeId}") {
+          bridgeId, status
+        }
+      }`
+    };
+    const getRes = await server.inject({
+      method: 'POST',
+      url: '/graphql',
+      payload: getQuery
+    });
+    const getData = JSON.parse(getRes.payload).data.bridge;
+
+    expect(getData.bridgeId).to.equal(bridgeId);
+    expect(getData.status).to.equal('RUNNING');
+
+    const stopQuery = { query: `
+      mutation {
+        stopBridge(bridgeId: "${bridgeId}")
+      }`
+    };
+    const stopRes = await server.inject({
+      method: 'POST',
+      url: '/graphql',
+      payload: stopQuery
+    });
+
+    expect(JSON.parse(stopRes.payload).data.stopBridge).to.equal(true);
+
+    const res = await server.inject({
+      method: 'POST',
+      url: '/graphql',
+      payload: getQuery
+    });
+    const data = JSON.parse(res.payload).data.bridge;
+
+    expect(data.bridgeId).to.equal(bridgeId);
+    expect(data.status === 'STOPPING' || data.status === 'STOPPED').to.equal(true);
   });
 });

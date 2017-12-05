@@ -1,18 +1,18 @@
 CREATE TABLE bridges (
   bridgeId CHAR(36) NOT NULL,
-  container1Id CHAR(64) NULL,       -- The instances may need to be extracted to
-  container2Id CHAR(64) NULL,       -- a separate table at a later time.
+  container1Id CHAR(64) DEFAULT NULL, -- The instances may need to be extracted to
+  container2Id CHAR(64) DEFAULT NULL, -- a separate table at a later time.
   accountId CHAR(36) NOT NULL,
   username VARCHAR(255) NOT NULL,
-  name VARCHAR(255) NOT NULL,       -- name of bridge
-  namespace TEXT NOT NULL,          -- s3 endpoint namespace
-  sshKey TEXT NOT NULL,             -- private key
-  sshKeyName VARCHAR(255) NOT NULL, -- name of public key stored on account
-  sshKeyId VARCHAR(255) NOT NULL,   -- key id of public key
-  accessKey CHAR(36) NOT NULL,      -- minio s3 access key
-  secretKey CHAR(36) NOT NULL,      -- minio s3 secret
-  directoryMap TEXT NOT NULL,       -- s3 bucket to manta directory mapping
-  status ENUM('STARTING', 'RUNNING', 'STOPPED') NOT NULL,
+  name VARCHAR(255) NOT NULL,         -- name of bridge
+  namespace TEXT NOT NULL,            -- s3 endpoint namespace
+  sshKey TEXT NOT NULL,               -- private key
+  sshKeyName VARCHAR(255) NOT NULL,   -- name of public key stored on account
+  sshKeyId VARCHAR(255) NOT NULL,     -- key id of public key
+  accessKey CHAR(36) NOT NULL,        -- minio s3 access key
+  secretKey CHAR(36) NOT NULL,        -- minio s3 secret
+  directoryMap TEXT NOT NULL,         -- s3 bucket to manta directory mapping
+  status ENUM('STARTING', 'RUNNING', 'STOPPING', 'STOPPED') NOT NULL,
   PRIMARY KEY (bridgeId)
 );
 
@@ -21,7 +21,7 @@ CREATE TABLE bridge_usage (
   accountId CHAR(36) NOT NULL,
   bridgeId CHAR(36) NOT NULL,       -- bridge id cannot be a foreign key due to deletions
   started DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  stopped DATETIME NULL,
+  stopped DATETIME DEFAULT NULL,
   PRIMARY KEY (bridgeId, started),
   INDEX (accountId)
 );
@@ -79,10 +79,10 @@ DELIMITER $$
 CREATE PROCEDURE update_containers_in_bridge (
   container1 CHAR(64),
   container2 CHAR(64),
-  bridge_id CHAR(36)
+  bridge_id CHAR(36),
+  account_id CHAR(36)
 )
 BEGIN
-  DECLARE account_id CHAR(36);
   DECLARE rows_updated INT;
   DECLARE EXIT HANDLER FOR SQLEXCEPTION
   BEGIN
@@ -90,10 +90,6 @@ BEGIN
   END;
 
   START TRANSACTION;
-    -- Get the account associated with the bridge.
-    SELECT accountId INTO account_id FROM bridges
-    WHERE bridgeId = bridge_id;
-
     -- Add the usage data.
     INSERT INTO bridge_usage (accountId, bridgeId)
     VALUES (account_id, bridge_id);
@@ -101,7 +97,7 @@ BEGIN
     -- Associate the containers with the bridge.
     UPDATE bridges SET container1Id = container1, container2Id = container2,
                        status = 'RUNNING'
-    WHERE bridgeId = bridge_id;
+    WHERE bridgeId = bridge_id AND accountId = account_id;
     SELECT ROW_COUNT() INTO rows_updated;
 
     SELECT rows_updated;
@@ -144,7 +140,7 @@ BEGIN
     SELECT ROW_COUNT() INTO rows_deleted;
 
     UPDATE bridge_usage SET stopped = CURRENT_TIMESTAMP()
-    WHERE bridgeId = bridge_id;
+    WHERE bridgeId = bridge_id AND accountId = account_id AND stopped IS NULL;
 
     SELECT rows_deleted;
   COMMIT;
@@ -162,6 +158,53 @@ BEGIN
   SELECT bridgeId, container1Id, container2Id, accountId, username, sshKeyName,
          sshKeyId, namespace, name, directoryMap, status
   FROM bridges WHERE accountId = account_id;
+END$$
+
+DELIMITER ;
+
+
+DELIMITER $$
+
+CREATE PROCEDURE update_bridge_status (
+  bridge_id CHAR(36),
+  account_id CHAR(36),
+  new_status ENUM('STARTING', 'RUNNING', 'STOPPING', 'STOPPED')
+)
+BEGIN
+  UPDATE bridges SET status = new_status
+  WHERE bridgeId = bridge_id AND accountId = account_id;
+END$$
+
+DELIMITER ;
+
+
+DELIMITER $$
+
+CREATE PROCEDURE stop_bridge (
+  bridge_id CHAR(36),
+  account_id CHAR(36)
+)
+BEGIN
+  DECLARE rows_updated INT;
+  DECLARE EXIT HANDLER FOR SQLEXCEPTION
+  BEGIN
+    ROLLBACK;
+  END;
+
+  START TRANSACTION;
+    -- Set the bridge status to STOPPED.
+    UPDATE bridges SET status = 'STOPPED'
+    WHERE bridgeId = bridge_id AND accountId = account_id;
+
+    -- Get the number of rows that were updated.
+    SELECT ROW_COUNT() INTO rows_updated;
+
+    -- Update the bridge usage to reflect the stop event.
+    UPDATE bridge_usage SET stopped = CURRENT_TIMESTAMP()
+    WHERE bridgeId = bridge_id AND accountId = account_id AND stopped IS NULL;
+
+    SELECT rows_updated;
+  COMMIT;
 END$$
 
 DELIMITER ;
@@ -194,6 +237,16 @@ DELIMITER $$
 CREATE PROCEDURE delete_all_accounts_from_table ()
 BEGIN
   DELETE FROM accounts;
+END$$
+
+DELIMITER ;
+
+
+DELIMITER $$
+
+CREATE PROCEDURE delete_all_bridge_usage_from_table ()
+BEGIN
+  DELETE FROM bridge_usage;
 END$$
 
 DELIMITER ;

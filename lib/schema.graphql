@@ -23,5 +23,6 @@ type Mutation {
     secretKey: String!
     directoryMap: String!
   ): Bridge,
-  deleteBridge (bridgeId: String!): Boolean
+  deleteBridge (bridgeId: String!): Boolean,
+  stopBridge (bridgeId: String!): Boolean
 }
