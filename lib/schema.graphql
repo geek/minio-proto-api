@@ -6,6 +6,7 @@ type Bridge {
   namespace: String!
   name: String!
   directoryMap: String!
+  status: String!
 }
 
 type Query {

@@ -173,7 +173,7 @@ describe('Minio API', () => {
           accessKey: "foobar",
           secretKey: "bazquux"
         ) {
-          bridgeId, accountId, username, sshKeyId, namespace, name, directoryMap
+          bridgeId, accountId, username, sshKeyId, namespace, name, directoryMap, status
         }
       }`
     };
@@ -189,6 +189,7 @@ describe('Minio API', () => {
     expect(data.sshKeyId).to.contain(fingerprint);
     expect(data.name).to.equal('foo');
     expect(data.directoryMap).to.equal('*:/stor/*');
+    expect(data.status).to.equal('STARTING');
   });
 
   it('retrieves an existing bridge', { timeout: 20000 }, async () => {
@@ -379,6 +380,23 @@ describe('Minio API', () => {
     expect(createUsage.bridgeId).to.equal(bridgeId);
     expect(createUsage.started).to.be.a.date();
     expect(createUsage.stopped).to.equal(null);
+
+    const getQuery = { query: `
+      query {
+        bridge(bridgeId: "${bridgeId}") {
+          bridgeId, status
+        }
+      }`
+    };
+    const getRes = await server.inject({
+      method: 'POST',
+      url: '/graphql',
+      payload: getQuery
+    });
+    const getData = JSON.parse(getRes.payload).data.bridge;
+
+    expect(getData.bridgeId).to.equal(bridgeId);
+    expect(getData.status).to.equal('RUNNING');
 
     const query = { query: `
       mutation {

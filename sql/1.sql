@@ -12,6 +12,7 @@ CREATE TABLE bridges (
   accessKey CHAR(36) NOT NULL,      -- minio s3 access key
   secretKey CHAR(36) NOT NULL,      -- minio s3 secret
   directoryMap TEXT NOT NULL,       -- s3 bucket to manta directory mapping
+  status ENUM('STARTING', 'RUNNING', 'STOPPED') NOT NULL,
   PRIMARY KEY (bridgeId)
 );
 
@@ -63,9 +64,11 @@ CREATE PROCEDURE create_bridge (
 )
 BEGIN
   INSERT INTO bridges (bridgeId, accountId, username, namespace, name, sshKey,
-                       sshKeyName, sshKeyId, accessKey, secretKey, directoryMap)
+                       sshKeyName, sshKeyId, accessKey, secretKey, directoryMap,
+                       status)
   VALUES (bridge_id, account_id, username, namespace, name, ssh_key,
-          ssh_key_name, ssh_key_id, access_key, secret_key, directory_map);
+          ssh_key_name, ssh_key_id, access_key, secret_key, directory_map,
+          'STARTING');
 END$$
 
 DELIMITER ;
@@ -96,7 +99,8 @@ BEGIN
     VALUES (account_id, bridge_id);
 
     -- Associate the containers with the bridge.
-    UPDATE bridges SET container1Id = container1, container2Id = container2
+    UPDATE bridges SET container1Id = container1, container2Id = container2,
+                       status = 'RUNNING'
     WHERE bridgeId = bridge_id;
     SELECT ROW_COUNT() INTO rows_updated;
 
@@ -115,7 +119,7 @@ CREATE PROCEDURE get_bridge (
 )
 BEGIN
   SELECT bridgeId, container1Id, container2Id, accountId, username, sshKeyName,
-         sshKeyId, namespace, name, directoryMap
+         sshKeyId, namespace, name, directoryMap, status
   FROM bridges WHERE bridgeId = bridge_id AND accountId = account_id;
 END$$
 
@@ -156,7 +160,7 @@ CREATE PROCEDURE list_bridges_by_account (
 )
 BEGIN
   SELECT bridgeId, container1Id, container2Id, accountId, username, sshKeyName,
-         sshKeyId, namespace, name, directoryMap
+         sshKeyId, namespace, name, directoryMap, status
   FROM bridges WHERE accountId = account_id;
 END$$
 
