@@ -173,7 +173,7 @@ describe('Minio API', () => {
           accessKey: "foobar",
           secretKey: "bazquux"
         ) {
-          bridgeId, containerId, accountId, username, sshKeyId, namespace, name, directoryMap
+          bridgeId, accountId, username, sshKeyId, namespace, name, directoryMap
         }
       }`
     };
@@ -216,7 +216,7 @@ describe('Minio API', () => {
     const query = { query: `
       query {
         bridge(bridgeId: "${bridgeId}") {
-          bridgeId, containerId, accountId, username, namespace, sshKeyId, name, directoryMap
+          bridgeId, accountId, username, namespace, sshKeyId, name, directoryMap
         }
       }`
     };
@@ -228,7 +228,6 @@ describe('Minio API', () => {
     const data = JSON.parse(res.payload).data.bridge;
 
     expect(data.bridgeId).to.equal(bridgeId);
-    expect(data.containerId).to.exist();
     expect(data.accountId).to.equal(authAccount.id);
     expect(data.username).to.equal(authAccount.login);
     expect(data.sshKeyId).to.contain(fingerprint);

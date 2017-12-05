@@ -1,6 +1,5 @@
 type Bridge {
   bridgeId: String!
-  containerId: [String]
   accountId: String!
   username: String!
   sshKeyId: String!
