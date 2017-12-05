@@ -377,8 +377,8 @@ describe('Minio API', () => {
 
     expect(createUsage.accountId).to.equal(accountId);
     expect(createUsage.bridgeId).to.equal(bridgeId);
-    expect(createUsage.created).to.be.a.date();
-    expect(createUsage.deleted).to.equal(null);
+    expect(createUsage.started).to.be.a.date();
+    expect(createUsage.stopped).to.equal(null);
 
     const query = { query: `
       mutation {
@@ -396,7 +396,7 @@ describe('Minio API', () => {
 
     expect(deleteUsage.accountId).to.equal(accountId);
     expect(deleteUsage.bridgeId).to.equal(bridgeId);
-    expect(deleteUsage.created).to.equal(createUsage.created);
-    expect(deleteUsage.deleted).to.be.a.date();
+    expect(deleteUsage.started).to.equal(createUsage.started);
+    expect(deleteUsage.stopped).to.be.a.date();
   });
 });

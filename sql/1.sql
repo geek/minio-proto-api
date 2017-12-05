@@ -19,9 +19,9 @@ CREATE TABLE bridges (
 CREATE TABLE bridge_usage (
   accountId CHAR(36) NOT NULL,
   bridgeId CHAR(36) NOT NULL,       -- bridge id cannot be a foreign key due to deletions
-  created DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  deleted DATETIME NULL,
-  PRIMARY KEY (bridgeId),
+  started DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  stopped DATETIME NULL,
+  PRIMARY KEY (bridgeId, started),
   INDEX (accountId)
 );
 
@@ -139,7 +139,7 @@ BEGIN
     DELETE FROM bridges WHERE bridgeId = bridge_id AND accountId = account_id;
     SELECT ROW_COUNT() INTO rows_deleted;
 
-    UPDATE bridge_usage SET deleted = CURRENT_TIMESTAMP()
+    UPDATE bridge_usage SET stopped = CURRENT_TIMESTAMP()
     WHERE bridgeId = bridge_id;
 
     SELECT rows_deleted;
