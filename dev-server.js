@@ -30,7 +30,7 @@ async function main () {
           keyId: process.env.SDC_KEY_ID,
           apiBaseUrl: process.env.SDC_URL,
           url: 'https://sso.joyent.com/login',
-          permissions: JSON.stringify({ 'cloudapi': ['/my/*'] })
+          permissions: { 'cloudapi': ['/my/*'] }
         }
       }
     },
