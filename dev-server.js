@@ -8,7 +8,10 @@ const Allowed = require('./.allowed');
 const Api = require('./');
 
 async function main () {
-  const server = Hapi.server({ port: process.env.PORT || 80 });
+  const server = Hapi.server({
+    port: process.env.PORT || 80,
+    routes: { cors: true }
+  });
 
   await server.register([
     Inert,
