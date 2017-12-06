@@ -95,15 +95,17 @@ BEGIN
   END;
 
   START TRANSACTION;
-    -- Add the usage data.
-    INSERT INTO bridge_usage (accountId, bridgeId)
-    VALUES (account_id, bridge_id);
-
     -- Associate the containers with the bridge.
     UPDATE bridges SET container1Id = container1, container2Id = container2,
                        status = 'RUNNING'
-    WHERE bridgeId = bridge_id AND accountId = account_id;
+    WHERE bridgeId = bridge_id AND accountId = account_id AND status = 'STARTING';
     SELECT ROW_COUNT() INTO rows_updated;
+
+    -- If a bridge was found, add a usage record.
+    IF rows_updated > 0 THEN
+      INSERT INTO bridge_usage (accountId, bridgeId)
+      VALUES (account_id, bridge_id);
+    END IF;
 
     SELECT rows_updated;
   COMMIT;
@@ -143,11 +145,15 @@ BEGIN
   END;
 
   START TRANSACTION;
+    -- Delete the bridge.
     DELETE FROM bridges WHERE bridgeId = bridge_id AND accountId = account_id;
     SELECT ROW_COUNT() INTO rows_deleted;
 
-    UPDATE bridge_usage SET stopped = CURRENT_TIMESTAMP()
-    WHERE bridgeId = bridge_id AND accountId = account_id AND stopped IS NULL;
+    -- If a bridge was found, update the usage record.
+    IF rows_deleted > 0 THEN
+      UPDATE bridge_usage SET stopped = CURRENT_TIMESTAMP()
+      WHERE bridgeId = bridge_id AND accountId = account_id AND stopped IS NULL;
+    END IF;
 
     SELECT rows_deleted;
   COMMIT;
@@ -204,14 +210,16 @@ BEGIN
   START TRANSACTION;
     -- Set the bridge status to STOPPED.
     UPDATE bridges SET status = 'STOPPED'
-    WHERE bridgeId = bridge_id AND accountId = account_id;
+    WHERE bridgeId = bridge_id AND accountId = account_id AND status = 'STOPPING';
 
     -- Get the number of rows that were updated.
     SELECT ROW_COUNT() INTO rows_updated;
 
-    -- Update the bridge usage to reflect the stop event.
-    UPDATE bridge_usage SET stopped = CURRENT_TIMESTAMP()
-    WHERE bridgeId = bridge_id AND accountId = account_id AND stopped IS NULL;
+    -- If a bridge was found, update the usage record.
+    IF rows_updated > 0 THEN
+      UPDATE bridge_usage SET stopped = CURRENT_TIMESTAMP()
+      WHERE bridgeId = bridge_id AND accountId = account_id AND stopped IS NULL;
+    END IF;
 
     SELECT rows_updated;
   COMMIT;
@@ -237,14 +245,16 @@ BEGIN
   START TRANSACTION;
     -- Set the bridge status to RUNNING.
     UPDATE bridges SET status = 'RUNNING'
-    WHERE bridgeId = bridge_id AND accountId = account_id;
+    WHERE bridgeId = bridge_id AND accountId = account_id AND status = 'STOPPED';
 
     -- Get the number of rows that were updated.
     SELECT ROW_COUNT() INTO rows_updated;
 
-    -- Add a new bridge usage record to reflect the start event.
-    INSERT INTO bridge_usage (accountId, bridgeId)
-    VALUES (account_id, bridge_id);
+    -- If a bridge was found, create a new usage record.
+    IF rows_updated > 0 THEN
+      INSERT INTO bridge_usage (accountId, bridgeId)
+      VALUES (account_id, bridge_id);
+    END IF;
 
     SELECT rows_updated;
   COMMIT;
