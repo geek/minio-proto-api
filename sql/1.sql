@@ -1,4 +1,4 @@
-CREATE TABLE bridges (
+CREATE TABLE IF NOT EXISTS bridges (
   bridgeId CHAR(36) NOT NULL,
   container1Id CHAR(64) DEFAULT NULL, -- The instances may need to be extracted to
   container2Id CHAR(64) DEFAULT NULL, -- a separate table at a later time.
@@ -17,7 +17,7 @@ CREATE TABLE bridges (
 );
 
 
-CREATE TABLE bridge_usage (
+CREATE TABLE IF NOT EXISTS bridge_usage (
   accountId CHAR(36) NOT NULL,
   bridgeId CHAR(36) NOT NULL,       -- bridge id cannot be a foreign key due to deletions
   started DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -27,13 +27,15 @@ CREATE TABLE bridge_usage (
 );
 
 
-CREATE TABLE accounts (
+CREATE TABLE IF NOT EXISTS accounts (
   accountId CHAR(36) NOT NULL,
   PRIMARY KEY (accountId)
 );
 
 
+DROP PROCEDURE IF EXISTS does_account_exist;
 DELIMITER $$
+
 
 CREATE PROCEDURE does_account_exist (
   account_id CHAR(36)
@@ -47,7 +49,9 @@ END$$
 DELIMITER ;
 
 
+DROP PROCEDURE IF EXISTS create_bridge;
 DELIMITER $$
+
 
 CREATE PROCEDURE create_bridge (
   bridge_id CHAR(36),
@@ -74,6 +78,7 @@ END$$
 DELIMITER ;
 
 
+DROP PROCEDURE IF EXISTS update_containers_in_bridge;
 DELIMITER $$
 
 CREATE PROCEDURE update_containers_in_bridge (
@@ -107,6 +112,7 @@ END$$
 DELIMITER ;
 
 
+DROP PROCEDURE IF EXISTS get_bridge;
 DELIMITER $$
 
 CREATE PROCEDURE get_bridge (
@@ -122,6 +128,7 @@ END$$
 DELIMITER ;
 
 
+DROP PROCEDURE IF EXISTS delete_bridge;
 DELIMITER $$
 
 CREATE PROCEDURE delete_bridge (
@@ -149,6 +156,7 @@ END$$
 DELIMITER ;
 
 
+DROP PROCEDURE IF EXISTS list_bridges_by_account;
 DELIMITER $$
 
 CREATE PROCEDURE list_bridges_by_account (
@@ -163,6 +171,7 @@ END$$
 DELIMITER ;
 
 
+DROP PROCEDURE IF EXISTS update_bridge_status;
 DELIMITER $$
 
 CREATE PROCEDURE update_bridge_status (
@@ -178,6 +187,7 @@ END$$
 DELIMITER ;
 
 
+DROP PROCEDURE IF EXISTS stop_bridge;
 DELIMITER $$
 
 CREATE PROCEDURE stop_bridge (
@@ -210,6 +220,40 @@ END$$
 DELIMITER ;
 
 
+DROP PROCEDURE IF EXISTS resume_bridge;
+DELIMITER $$
+
+CREATE PROCEDURE resume_bridge (
+  bridge_id CHAR(36),
+  account_id CHAR(36)
+)
+BEGIN
+  DECLARE rows_updated INT;
+  DECLARE EXIT HANDLER FOR SQLEXCEPTION
+  BEGIN
+    ROLLBACK;
+  END;
+
+  START TRANSACTION;
+    -- Set the bridge status to RUNNING.
+    UPDATE bridges SET status = 'RUNNING'
+    WHERE bridgeId = bridge_id AND accountId = account_id;
+
+    -- Get the number of rows that were updated.
+    SELECT ROW_COUNT() INTO rows_updated;
+
+    -- Add a new bridge usage record to reflect the start event.
+    INSERT INTO bridge_usage (accountId, bridgeId)
+    VALUES (account_id, bridge_id);
+
+    SELECT rows_updated;
+  COMMIT;
+END$$
+
+DELIMITER ;
+
+
+DROP PROCEDURE IF EXISTS get_usage_by_account;
 DELIMITER $$
 
 CREATE PROCEDURE get_usage_by_account (
@@ -222,6 +266,7 @@ END$$
 DELIMITER ;
 
 
+DROP PROCEDURE IF EXISTS delete_all_bridges_from_table;
 DELIMITER $$
 
 CREATE PROCEDURE delete_all_bridges_from_table ()
@@ -232,6 +277,7 @@ END$$
 DELIMITER ;
 
 
+DROP PROCEDURE IF EXISTS delete_all_accounts_from_table;
 DELIMITER $$
 
 CREATE PROCEDURE delete_all_accounts_from_table ()
@@ -242,6 +288,7 @@ END$$
 DELIMITER ;
 
 
+DROP PROCEDURE IF EXISTS delete_all_bridge_usage_from_table;
 DELIMITER $$
 
 CREATE PROCEDURE delete_all_bridge_usage_from_table ()
