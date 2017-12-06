@@ -5,13 +5,11 @@ CREATE TABLE IF NOT EXISTS bridges (
   accountId CHAR(36) NOT NULL,
   username VARCHAR(255) NOT NULL,
   name VARCHAR(255) NOT NULL,         -- name of bridge
-  namespace TEXT NOT NULL,            -- s3 endpoint namespace
+  namespace TEXT NULL,                -- s3 endpoint namespace
   sshKey TEXT NOT NULL,               -- private key
   sshKeyName VARCHAR(255) NOT NULL,   -- name of public key stored on account
   sshKeyId VARCHAR(255) NOT NULL,     -- key id of public key
-  accessKey CHAR(36) NOT NULL,        -- minio s3 access key
-  secretKey CHAR(36) NOT NULL,        -- minio s3 secret
-  directoryMap TEXT NOT NULL,         -- s3 bucket to manta directory mapping
+  directoryMap TEXT NULL,             -- s3 bucket to manta directory mapping
   status ENUM('STARTING', 'RUNNING', 'STOPPING', 'STOPPED') NOT NULL,
   PRIMARY KEY (bridgeId)
 );
@@ -62,16 +60,13 @@ CREATE PROCEDURE create_bridge (
   ssh_key TEXT,
   ssh_key_name VARCHAR(255),
   ssh_key_id VARCHAR(255),
-  access_key CHAR(36),
-  secret_key CHAR(36),
   directory_map TEXT
 )
 BEGIN
   INSERT INTO bridges (bridgeId, accountId, username, namespace, name, sshKey,
-                       sshKeyName, sshKeyId, accessKey, secretKey, directoryMap,
-                       status)
+                       sshKeyName, sshKeyId, directoryMap, status)
   VALUES (bridge_id, account_id, username, namespace, name, ssh_key,
-          ssh_key_name, ssh_key_id, access_key, secret_key, directory_map,
+          ssh_key_name, ssh_key_id, directory_map,
           'STARTING');
 END$$
 

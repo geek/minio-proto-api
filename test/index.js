@@ -199,9 +199,7 @@ describe('Minio API', () => {
         createBridge(
           namespace: "abc123",
           name: "foo",
-          directoryMap: "*:/stor/*",
-          accessKey: "foobar",
-          secretKey: "bazquux"
+          directoryMap: "*:/stor/*"
         ) {
           bridgeId, accountId, username, sshKeyId, namespace, name, directoryMap, status
         }
@@ -229,9 +227,7 @@ describe('Minio API', () => {
         createBridge(
           namespace: "abc123",
           name: "foo",
-          directoryMap: "*:/stor/*",
-          accessKey: "foobar",
-          secretKey: "bazquux"
+          directoryMap: "*:/stor/*"
         ) {
           bridgeId
         }
@@ -285,9 +281,7 @@ describe('Minio API', () => {
         createBridge(
           namespace: "abc123",
           name: "foo",
-          directoryMap: "*:/stor/*",
-          accessKey: "foobar",
-          secretKey: "bazquux"
+          directoryMap: "*:/stor/*"
         ) {
           bridgeId
         }
@@ -331,11 +325,7 @@ describe('Minio API', () => {
     const mutation = { query: `
       mutation {
         createBridge(
-          namespace: "abc123",
-          name: "foo",
-          directoryMap: "*:/stor/*",
-          accessKey: "foobar",
-          secretKey: "bazquux"
+          name: "foo"
         ) {
           bridgeId
         }
@@ -374,9 +364,7 @@ describe('Minio API', () => {
         createBridge(
           namespace: "abc123",
           name: "foo",
-          directoryMap: "*:/stor/*",
-          accessKey: "foobar",
-          secretKey: "bazquux"
+          directoryMap: "*:/stor/*"
         ) {
           bridgeId, accountId
         }
@@ -441,9 +429,7 @@ describe('Minio API', () => {
         createBridge(
           namespace: "abc123",
           name: "foo",
-          directoryMap: "*:/stor/*",
-          accessKey: "foobar",
-          secretKey: "bazquux"
+          directoryMap: "*:/stor/*"
         ) {
           bridgeId, accountId, status
         }

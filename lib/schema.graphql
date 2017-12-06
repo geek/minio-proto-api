@@ -3,9 +3,9 @@ type Bridge {
   accountId: String!
   username: String!
   sshKeyId: String!
-  namespace: String!
+  namespace: String
   name: String!
-  directoryMap: String!
+  directoryMap: String
   status: String!
 }
 
@@ -17,11 +17,9 @@ type Query {
 
 type Mutation {
   createBridge (
-    namespace: String!
+    namespace: String
     name: String!
-    accessKey: String!
-    secretKey: String!
-    directoryMap: String!
+    directoryMap: String
   ): Bridge,
   deleteBridge (bridgeId: String!): Boolean,
   stopBridge (bridgeId: String!): Boolean,
