@@ -21,7 +21,7 @@ process.env.ARECORD_PARENT = '';
 
 Create a local `.allowed` file with the list of allowed account Ids:
 ```
-YOUR ACCOUNT ID,AOTHER ACCOUNT ID
+YOUR_ACCOUNT_ID, ANOTHER_ACCOUNT_ID
 ```
 
 ```sh

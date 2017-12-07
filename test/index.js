@@ -50,6 +50,12 @@ async function createServer (options) {
       password: 'test-pass',
       database: 'test-db'
     },
+    cloudflare: {
+      zoneId: process.env.CF_ZONEID,
+      email: process.env.CF_EMAIL,
+      key: process.env.CF_KEY,
+      arecordParent: process.env.ARECORD_PARENT
+    },
     cloudapiUrl
   }, options);
 
@@ -190,7 +196,6 @@ describe('Minio API', () => {
     const payload = { query: `
       mutation {
         createBridge(
-          namespace: "abc123",
           name: "foo",
           directoryMap: "*:/stor/*"
         ) {
@@ -206,7 +211,7 @@ describe('Minio API', () => {
     expect(data.bridgeId.length).to.equal(36);
     expect(data.accountId).to.equal(authAccount.id);
     expect(data.username).to.equal(authAccount.login);
-    expect(data.namespace).to.equal('abc123');
+    expect(data.namespace).to.equal(`foo.${process.env.ARECORD_PARENT}`);
     expect(data.sshKeyId).to.contain(fingerprint);
     expect(data.name).to.equal('foo');
     expect(data.directoryMap).to.equal('*:/stor/*');
@@ -218,7 +223,6 @@ describe('Minio API', () => {
     const mutation = { query: `
       mutation {
         createBridge(
-          namespace: "abc123",
           name: "foo",
           directoryMap: "*:/stor/*"
         ) {
@@ -251,28 +255,16 @@ describe('Minio API', () => {
     expect(data.accountId).to.equal(authAccount.id);
     expect(data.username).to.equal(authAccount.login);
     expect(data.sshKeyId).to.contain(fingerprint);
-    expect(data.namespace).to.equal('abc123');
+    expect(data.namespace).to.equal(`foo.${process.env.ARECORD_PARENT}`);
     expect(data.name).to.equal('foo');
     expect(data.directoryMap).to.equal('*:/stor/*');
   });
 
   it('lists all bridges for user', { timeout: 20000 }, async () => {
     const server = await createServer();
-    const barrier = new Barrier();
-    server.app.mysql.query('CALL delete_all_bridges_from_table()', (err) => {
-      if (err) {
-        return barrier.pass(err);
-      }
-
-      barrier.pass();
-    });
-
-    await barrier;
-
     const mutation = { query: `
       mutation {
         createBridge(
-          namespace: "abc123",
           name: "foo",
           directoryMap: "*:/stor/*"
         ) {
@@ -290,7 +282,7 @@ describe('Minio API', () => {
     create = await server.inject({
       method: 'POST',
       url: '/graphql',
-      payload: mutation
+      payload: { query: mutation.query.replace('foo', 'bar') } // names cannot be duplicated.
     });
     const bridgeId2 = JSON.parse(create.payload).data.createBridge.bridgeId;
     const query = { query: `
@@ -355,7 +347,6 @@ describe('Minio API', () => {
     const mutation = { query: `
       mutation {
         createBridge(
-          namespace: "abc123",
           name: "foo",
           directoryMap: "*:/stor/*"
         ) {
@@ -420,7 +411,6 @@ describe('Minio API', () => {
     const mutation = { query: `
       mutation {
         createBridge(
-          namespace: "abc123",
           name: "foo",
           directoryMap: "*:/stor/*"
         ) {
