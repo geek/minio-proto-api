@@ -178,7 +178,7 @@ describe('Minio API', () => {
     cloudapiServer = null;
   });
 
-  it('registers the API plugin', async () => {
+  it('registers the API plugin', { timeout: 20000 }, async () => {
     const server = await createServer();
     const plugin = server.registrations.api;
 
