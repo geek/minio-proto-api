@@ -13,13 +13,15 @@ process.env.PORT = 8080;
 process.env.DOCKER_CERT_PATH = '';
 process.env.DOCKER_HOST = 'tcp://us-sw-1.docker.joyent.com:2376';
 process.env.DOCKER_TLS_VERIFY = '1';
+process.env.CF_ZONEID = '';
+process.env.CF_EMAIL = '';
+process.env.CF_KEY = '';
+process.env.ARECORD_PARENT = '';
 ```
 
-Create a local `.allowed.js` file with the list of allowed account Ids:
-```js
-module.exports = [
-  'YOUR ACCOUNT ID'
-];
+Create a local `.allowed` file with the list of allowed account Ids:
+```
+YOUR ACCOUNT ID,AOTHER ACCOUNT ID
 ```
 
 ```sh
@@ -34,8 +36,7 @@ Create a bridge:
 ```
 mutation {
   createBridge(
-      username: "myname", namespace: "abc123", directoryMap: "*:/stor/*",
-      sshKey: "12:c3:de:ad:be:ef", accessKey: "foobar", secretKey: "bazquux")
+      directoryMap: "*:/stor/*", name: "bazquux")
   {
     bridgeId
   }

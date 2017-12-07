@@ -17,7 +17,6 @@ type Query {
 
 type Mutation {
   createBridge (
-    namespace: String
     name: String!
     directoryMap: String
   ): Bridge,

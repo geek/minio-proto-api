@@ -63,3 +63,4 @@ doc
 
 # exports allowed account IDs
 .allowed.js
+.allowed

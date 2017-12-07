@@ -45,6 +45,12 @@ async function main () {
           user: 'test-user',
           password: 'test-pass',
           database: 'test-db'
+        },
+        cloudflare: {
+          zoneId: process.env.CF_ZONEID,
+          email: process.env.CF_EMAIL,
+          key: process.env.CF_KEY,
+          arecordParent: process.env.ARECORD_PARENT
         }
       }
     }
