@@ -5,13 +5,14 @@ CREATE TABLE IF NOT EXISTS bridges (
   accountId CHAR(36) NOT NULL,
   username VARCHAR(255) NOT NULL,
   name VARCHAR(255) NOT NULL,         -- name of bridge
-  namespace TEXT NULL,                -- s3 endpoint namespace
+  namespace TEXT DEFAULT NULL,        -- s3 endpoint namespace
   sshKey TEXT NOT NULL,               -- private key
   sshKeyName VARCHAR(255) NOT NULL,   -- name of public key stored on account
   sshKeyId VARCHAR(255) NOT NULL,     -- key id of public key
-  directoryMap TEXT NULL,             -- s3 bucket to manta directory mapping
+  directoryMap TEXT DEFAULT NULL,     -- s3 bucket to manta directory mapping
   status ENUM('STARTING', 'RUNNING', 'STOPPING', 'STOPPED') NOT NULL,
-  PRIMARY KEY (bridgeId)
+  PRIMARY KEY (bridgeId),
+  UNIQUE KEY (name)
 );
 
 
