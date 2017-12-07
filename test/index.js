@@ -35,7 +35,16 @@ async function createServer (options) {
   const server = Hapi.server();
   const cloudapiUrl = `http://localhost:${cloudapiServer.info.port}`;
 
+  // Make sure that each server is using a different account ID.
+  // The fact that operations continue after the server responds means
+  // that data can be added to the database between tests. For example,
+  // one test can complete, but container related operations may
+  // continue to update the database. The next test could then have
+  // unexpected usage data associated with the same account.
+  authAccount.id = Uuid.v4();
+
   options = Object.assign({
+    accounts: authAccount.id,
     db: {
       user: 'test-user',
       password: 'test-pass',
@@ -83,23 +92,7 @@ async function createServer (options) {
           return barrier.pass(err);
         }
 
-        const values = new Array(1).fill('(?)').join(',');
-        const sql = `INSERT INTO accounts VALUES ${values};`;
-        server.app.mysql.query(sql, authAccount.id, (err) => {
-          if (err) {
-            return barrier.pass(err);
-          }
-
-          // Make sure that each server is using a different account ID.
-          // The fact that operations continue after the server responds means
-          // that data can be added to the database between tests. For example,
-          // one test can complete, but container related operations may
-          // continue to update the database. The next test could then have
-          // unexpected usage data associated with the same account.
-          authAccount.id = Uuid.v4();
-
-          barrier.pass(server);
-        });
+        barrier.pass(server);
       });
     });
   });

@@ -1,10 +1,10 @@
 'use strict';
 
+const Fs = require('fs');
 const Hapi = require('hapi');
 const HapiPino = require('hapi-pino');
 const Inert = require('inert');
 const Sso = require('minio-proto-auth');
-const Allowed = require('./.allowed');
 const Api = require('./');
 
 async function main () {
@@ -40,6 +40,7 @@ async function main () {
     {
       plugin: Api,
       options: {
+        accounts: Fs.readFileSync('./.allowed', 'utf8'),
         db: {
           user: 'test-user',
           password: 'test-pass',
@@ -75,16 +76,7 @@ async function main () {
       return;
     }
 
-    const values = new Array(Allowed.length).fill('(?)').join(',');
-    const sql = `INSERT INTO accounts VALUES ${values};`;
-    server.app.mysql.query(sql, Allowed, (err) => {
-      if (err) {
-        console.error(err);
-        return;
-      }
-
-      console.log(`server started at http://localhost:${server.info.port}`);
-    });
+    console.log(`server started at http://localhost:${server.info.port}`);
   });
 }
 
