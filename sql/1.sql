@@ -126,6 +126,22 @@ END$$
 DELIMITER ;
 
 
+DROP PROCEDURE IF EXISTS get_bridge_by_name;
+DELIMITER $$
+
+CREATE PROCEDURE get_bridge_by_name (
+  bridge_name VARCHAR(255),
+  account_id CHAR(36)
+)
+BEGIN
+  SELECT bridgeId, container1Id, container2Id, accountId, username, sshKeyName,
+         sshKeyId, namespace, name, directoryMap, status
+  FROM bridges WHERE name = bridge_name AND accountId = account_id;
+END$$
+
+DELIMITER ;
+
+
 DROP PROCEDURE IF EXISTS delete_bridge;
 DELIMITER $$
 

@@ -260,6 +260,48 @@ describe('Minio API', () => {
     expect(data.directoryMap).to.equal('*:/stor/*');
   });
 
+  it('retrieves an existing bridge by name', { timeout: 20000 }, async () => {
+    const server = await createServer();
+    const mutation = { query: `
+      mutation {
+        createBridge(
+          name: "foo",
+          directoryMap: "*:/stor/*"
+        ) {
+          bridgeId
+        }
+      }`
+    };
+
+    const create = await server.inject({
+      method: 'POST',
+      url: '/graphql',
+      payload: mutation
+    });
+    const bridgeId = JSON.parse(create.payload).data.createBridge.bridgeId;
+    const query = { query: `
+      query {
+        getBridgeByName(name: "foo") {
+          bridgeId, accountId, username, namespace, sshKeyId, name, directoryMap
+        }
+      }`
+    };
+    const res = await server.inject({
+      method: 'POST',
+      url: '/graphql',
+      payload: query
+    });
+    const data = JSON.parse(res.payload).data.getBridgeByName;
+
+    expect(data.bridgeId).to.equal(bridgeId);
+    expect(data.accountId).to.equal(authAccount.id);
+    expect(data.username).to.equal(authAccount.login);
+    expect(data.sshKeyId).to.contain(fingerprint);
+    expect(data.namespace).to.equal(`foo.${process.env.ARECORD_PARENT}`);
+    expect(data.name).to.equal('foo');
+    expect(data.directoryMap).to.equal('*:/stor/*');
+  });
+
   it('lists all bridges for user', { timeout: 20000 }, async () => {
     const server = await createServer();
     const mutation = { query: `

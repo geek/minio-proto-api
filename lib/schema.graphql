@@ -11,6 +11,7 @@ type Bridge {
 
 type Query {
   bridge (bridgeId: String!): Bridge,
+  getBridgeByName (name: String!): Bridge,
   listBridgesByAccount: [Bridge]
 }
 
