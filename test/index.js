@@ -98,7 +98,13 @@ async function createServer (options) {
           return barrier.pass(err);
         }
 
-        barrier.pass(server);
+        server.app.mysql.query(`REPLACE INTO accounts VALUES ('${authAccount.id}');`, (err) => {
+          if (err) {
+            return barrier.pass(err);
+          }
+
+          barrier.pass(server);
+        });
       });
     });
   });
