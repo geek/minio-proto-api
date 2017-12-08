@@ -27,7 +27,7 @@ async function main () {
         sso: {
           isDev: true,
           keyPath: process.env.SDC_KEY_PATH,
-          keyId: process.env.SDC_KEY_ID,
+          keyId: '/' + process.env.SDC_ACCOUNT + '/keys/' + process.env.SDC_KEY_ID,
           apiBaseUrl: process.env.SDC_URL,
           url: 'https://sso.joyent.com/login',
           permissions: { 'cloudapi': ['/my/*'] }

@@ -6,6 +6,7 @@ Create a local `.env.js` file with the following variables set:
 
 ```js
 process.env.SDC_URL = 'https://us-sw-1.api.joyentcloud.com';
+process.env.SDC_ACCOUNT = '';
 process.env.SDC_KEY_ID = '';
 process.env.SDC_KEY_PATH = '';
 process.env.COOKIE_PASSWORD = '';
