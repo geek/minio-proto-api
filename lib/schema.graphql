@@ -17,7 +17,7 @@ type Bridge {
 }
 
 type Query {
-  bridge(id: String, name: String): Bridge,
+  bridge(id: ID, name: String): Bridge,
   bridges: [Bridge]
 }
 
@@ -26,7 +26,7 @@ type Mutation {
     name: String!
     directoryMap: String
   ): Bridge,
-  deleteBridge (id: String!): Boolean,
-  stopBridge (id: String!): Boolean,
-  resumeBridge (id: String!): Boolean
+  deleteBridge (id: ID!): Boolean,
+  stopBridge (id: ID!): Boolean,
+  resumeBridge (id: ID!): Boolean
 }

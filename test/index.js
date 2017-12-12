@@ -297,7 +297,7 @@ describe('Minio API', () => {
       url: '/graphql',
       payload: query
     });
-    const data = JSON.parse(res.payload).data.getBridgeByName;
+    const data = JSON.parse(res.payload).data.bridge;
 
     expect(data.id).to.equal(bridgeId);
     expect(data.accountId).to.equal(authAccount.id);
