@@ -44,7 +44,7 @@ async function main () {
         db: {
           user: 'test-user',
           password: 'test-pass',
-          database: 'test-db'
+          database: 'dev-db'
         },
         cloudflare: {
           zoneId: process.env.CF_ZONEID,

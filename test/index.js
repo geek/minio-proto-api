@@ -373,7 +373,7 @@ describe('Minio API', () => {
     const bridgeId = JSON.parse(create.payload).data.createBridge.id;
     const query = { query: `
       mutation {
-        deleteBridge(id: "${bridgeId}")
+        deleteBridge(id: "${bridgeId}") { id }
       }`
     };
     let res = await server.inject({
@@ -381,16 +381,16 @@ describe('Minio API', () => {
       url: '/graphql',
       payload: query
     });
-    expect(JSON.parse(res.payload).data.deleteBridge).to.equal(true);
+    expect(JSON.parse(res.payload).data.deleteBridge.id).to.equal(bridgeId);
     res = await server.inject({
       method: 'POST',
       url: '/graphql',
       payload: query
     });
-    expect(JSON.parse(res.payload).data.deleteBridge).to.equal(false);
+    expect(JSON.parse(res.payload).errors).to.exist();
   });
 
-  it('tracks bridge usage', { timeout: 20000 }, async () => {
+  it('tracks bridge usage', { timeout: 25000 }, async () => {
     const server = await createServer();
     const mutation = { query: `
       mutation {
@@ -411,7 +411,6 @@ describe('Minio API', () => {
 
     const { id, accountId } = JSON.parse(create.payload).data.createBridge;
     const createUsage = await waitForUsageData(accountId, server);
-
     expect(createUsage.accountId).to.equal(accountId);
     expect(createUsage.id).to.equal(id);
     expect(createUsage.started).to.be.a.date();
@@ -436,7 +435,7 @@ describe('Minio API', () => {
 
     const query = { query: `
       mutation {
-        deleteBridge(id: "${id}")
+        deleteBridge(id: "${id}") { id }
       }`
     };
     const res = await server.inject({
@@ -445,9 +444,8 @@ describe('Minio API', () => {
       payload: query
     });
 
-    expect(JSON.parse(res.payload).data.deleteBridge).to.equal(true);
+    expect(JSON.parse(res.payload).data.deleteBridge.id).to.equal(id);
     const deleteUsage = await waitForUsageData(accountId, server);
-
     expect(deleteUsage.accountId).to.equal(accountId);
     expect(deleteUsage.id).to.equal(id);
     expect(deleteUsage.started).to.equal(createUsage.started);
