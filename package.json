@@ -4,8 +4,10 @@
   "description": "",
   "main": "./lib",
   "scripts": {
-    "compose-up": "docker-compose -f test/docker-compose.yml up -d",
-    "compose-down": "docker-compose -f test/docker-compose.yml down -v",
+    "test-compose-up": "docker-compose -f test/docker-compose.yml up -d",
+    "test-compose-down": "docker-compose -f test/docker-compose.yml down -v",
+    "compose-up": "docker-compose up -d",
+    "compose-down": "docker-compose down -v",
     "lint": "belly-button --fix -I 'node_modules/**' -I 'doc/**'",
     "predev": "npm run graphdoc && npm run compose-up",
     "dev": "NODE_ENV=development node -r ./.env.js --inspect dev-server.js",
@@ -13,9 +15,9 @@
     "fake": "graphql-faker ./lib/schema.graphql -p 4000",
     "faker": "graphql-faker ./lib/schema.graphql",
     "graphdoc": "graphdoc -s ./lib/schema.graphql -o ./doc --force",
-    "pretest": "npm run compose-up",
+    "pretest": "npm run test-compose-down && npm run test-compose-up",
     "test": "npm run lint && node -r ./.env.js node_modules/.bin/lab -v -a code -t 96",
-    "posttest": "npm run compose-down"
+    "posttest": "npm run test-compose-down"
   },
   "keywords": [],
   "author": "",

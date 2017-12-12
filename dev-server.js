@@ -76,14 +76,7 @@ async function main () {
 
   await server.start();
 
-  server.app.mysql.query('CALL delete_all_accounts_from_table()', (err) => {
-    if (err) {
-      console.error(err);
-      return;
-    }
-
-    console.log(`server started at http://localhost:${server.info.port}`);
-  });
+  console.log(`server started at http://localhost:${server.info.port}`);
 }
 
 main();

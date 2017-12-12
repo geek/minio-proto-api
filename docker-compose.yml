@@ -1,0 +1,14 @@
+version: '2.1'
+
+services:
+  mysql:
+    image: mysql:8
+    mem_limit: 512m
+    restart: always
+    ports:
+      - 3306:3306
+    environment:
+      - MYSQL_ROOT_PASSWORD=test-root-pass
+      - MYSQL_DATABASE=dev-db
+      - MYSQL_USER=test-user
+      - MYSQL_PASSWORD=test-pass
