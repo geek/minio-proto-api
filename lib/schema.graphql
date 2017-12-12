@@ -1,27 +1,32 @@
+enum BridgeState {
+  STARTING
+  RUNNING
+  STOPPING
+  STOPPED
+}
+
 type Bridge {
-  bridgeId: String!
-  accountId: String!
+  id: ID!
+  accountId: ID!
   username: String!
+  name: String!
   sshKeyId: String!
   namespace: String
-  name: String!
   directoryMap: String
-  status: String!
+  status: BridgeState!
 }
 
 type Query {
-  bridge (bridgeId: String!): Bridge,
-  getBridgeByName (name: String!): Bridge,
-  listBridgesByAccount: [Bridge]
+  bridge(id: String, name: String): Bridge,
+  bridges: [Bridge]
 }
-
 
 type Mutation {
   createBridge (
     name: String!
     directoryMap: String
   ): Bridge,
-  deleteBridge (bridgeId: String!): Boolean,
-  stopBridge (bridgeId: String!): Boolean,
-  resumeBridge (bridgeId: String!): Boolean
+  deleteBridge (id: String!): Boolean,
+  stopBridge (id: String!): Boolean,
+  resumeBridge (id: String!): Boolean
 }

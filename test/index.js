@@ -205,7 +205,7 @@ describe('Minio API', () => {
           name: "foo",
           directoryMap: "*:/stor/*"
         ) {
-          bridgeId, accountId, username, sshKeyId, namespace, name, directoryMap, status
+          id, accountId, username, sshKeyId, namespace, name, directoryMap, status
         }
       }`
     };
@@ -213,8 +213,8 @@ describe('Minio API', () => {
     const res = await server.inject({ method: 'POST', url: '/graphql', payload });
     const data = JSON.parse(res.payload).data.createBridge;
 
-    expect(data.bridgeId).to.be.a.string();
-    expect(data.bridgeId.length).to.equal(36);
+    expect(data.id).to.be.a.string();
+    expect(data.id.length).to.equal(36);
     expect(data.accountId).to.equal(authAccount.id);
     expect(data.username).to.equal(authAccount.login);
     expect(data.namespace).to.equal(`foo.${process.env.ARECORD_PARENT}`);
@@ -232,7 +232,7 @@ describe('Minio API', () => {
           name: "foo",
           directoryMap: "*:/stor/*"
         ) {
-          bridgeId
+          id
         }
       }`
     };
@@ -242,11 +242,11 @@ describe('Minio API', () => {
       url: '/graphql',
       payload: mutation
     });
-    const bridgeId = JSON.parse(create.payload).data.createBridge.bridgeId;
+    const bridgeId = JSON.parse(create.payload).data.createBridge.id;
     const query = { query: `
       query {
-        bridge(bridgeId: "${bridgeId}") {
-          bridgeId, accountId, username, namespace, sshKeyId, name, directoryMap
+        bridge(id: "${bridgeId}") {
+          id, accountId, username, namespace, sshKeyId, name, directoryMap
         }
       }`
     };
@@ -257,7 +257,7 @@ describe('Minio API', () => {
     });
     const data = JSON.parse(res.payload).data.bridge;
 
-    expect(data.bridgeId).to.equal(bridgeId);
+    expect(data.id).to.equal(bridgeId);
     expect(data.accountId).to.equal(authAccount.id);
     expect(data.username).to.equal(authAccount.login);
     expect(data.sshKeyId).to.contain(fingerprint);
@@ -274,7 +274,7 @@ describe('Minio API', () => {
           name: "foo",
           directoryMap: "*:/stor/*"
         ) {
-          bridgeId
+          id
         }
       }`
     };
@@ -284,11 +284,11 @@ describe('Minio API', () => {
       url: '/graphql',
       payload: mutation
     });
-    const bridgeId = JSON.parse(create.payload).data.createBridge.bridgeId;
+    const bridgeId = JSON.parse(create.payload).data.createBridge.id;
     const query = { query: `
       query {
-        getBridgeByName(name: "foo") {
-          bridgeId, accountId, username, namespace, sshKeyId, name, directoryMap
+        bridge(name: "foo") {
+          id, accountId, username, namespace, sshKeyId, name, directoryMap
         }
       }`
     };
@@ -299,7 +299,7 @@ describe('Minio API', () => {
     });
     const data = JSON.parse(res.payload).data.getBridgeByName;
 
-    expect(data.bridgeId).to.equal(bridgeId);
+    expect(data.id).to.equal(bridgeId);
     expect(data.accountId).to.equal(authAccount.id);
     expect(data.username).to.equal(authAccount.login);
     expect(data.sshKeyId).to.contain(fingerprint);
@@ -316,7 +316,7 @@ describe('Minio API', () => {
           name: "foo",
           directoryMap: "*:/stor/*"
         ) {
-          bridgeId
+          id
         }
       }`
     };
@@ -326,17 +326,17 @@ describe('Minio API', () => {
       url: '/graphql',
       payload: mutation
     });
-    const bridgeId1 = JSON.parse(create.payload).data.createBridge.bridgeId;
+    const bridgeId1 = JSON.parse(create.payload).data.createBridge.id;
     create = await server.inject({
       method: 'POST',
       url: '/graphql',
       payload: { query: mutation.query.replace('foo', 'bar') } // names cannot be duplicated.
     });
-    const bridgeId2 = JSON.parse(create.payload).data.createBridge.bridgeId;
+    const bridgeId2 = JSON.parse(create.payload).data.createBridge.id;
     const query = { query: `
       query {
-        listBridgesByAccount {
-          bridgeId
+        bridges {
+          id
         }
       }`
     };
@@ -345,12 +345,12 @@ describe('Minio API', () => {
       url: '/graphql',
       payload: query
     });
-    const data = JSON.parse(res.payload).data.listBridgesByAccount;
+    const data = JSON.parse(res.payload).data.bridges;
 
     expect(data).to.be.an.array();
     expect(data.length).to.equal(2);
-    expect(data.some((bridge) => { return bridge.bridgeId === bridgeId1; })).to.equal(true);
-    expect(data.some((bridge) => { return bridge.bridgeId === bridgeId2; })).to.equal(true);
+    expect(data.some((bridge) => { return bridge.id === bridgeId1; })).to.equal(true);
+    expect(data.some((bridge) => { return bridge.id === bridgeId2; })).to.equal(true);
   });
 
   it('deletes bridges', { timeout: 20000 }, async () => {
@@ -360,7 +360,7 @@ describe('Minio API', () => {
         createBridge(
           name: "foo"
         ) {
-          bridgeId
+          id
         }
       }`
     };
@@ -370,10 +370,10 @@ describe('Minio API', () => {
       url: '/graphql',
       payload: mutation
     });
-    const bridgeId = JSON.parse(create.payload).data.createBridge.bridgeId;
+    const bridgeId = JSON.parse(create.payload).data.createBridge.id;
     const query = { query: `
       mutation {
-        deleteBridge(bridgeId: "${bridgeId}")
+        deleteBridge(id: "${bridgeId}")
       }`
     };
     let res = await server.inject({
@@ -398,7 +398,7 @@ describe('Minio API', () => {
           name: "foo",
           directoryMap: "*:/stor/*"
         ) {
-          bridgeId, accountId
+          id, accountId
         }
       }`
     };
@@ -409,18 +409,18 @@ describe('Minio API', () => {
       payload: mutation
     });
 
-    const { bridgeId, accountId } = JSON.parse(create.payload).data.createBridge;
+    const { id, accountId } = JSON.parse(create.payload).data.createBridge;
     const createUsage = await waitForUsageData(accountId, server);
 
     expect(createUsage.accountId).to.equal(accountId);
-    expect(createUsage.bridgeId).to.equal(bridgeId);
+    expect(createUsage.id).to.equal(id);
     expect(createUsage.started).to.be.a.date();
     expect(createUsage.stopped).to.equal(null);
 
     const getQuery = { query: `
       query {
-        bridge(bridgeId: "${bridgeId}") {
-          bridgeId, status
+        bridge(id: "${id}") {
+          id, status
         }
       }`
     };
@@ -431,12 +431,12 @@ describe('Minio API', () => {
     });
     const getData = JSON.parse(getRes.payload).data.bridge;
 
-    expect(getData.bridgeId).to.equal(bridgeId);
+    expect(getData.id).to.equal(id);
     expect(getData.status).to.equal('RUNNING');
 
     const query = { query: `
       mutation {
-        deleteBridge(bridgeId: "${bridgeId}")
+        deleteBridge(id: "${id}")
       }`
     };
     const res = await server.inject({
@@ -449,7 +449,7 @@ describe('Minio API', () => {
     const deleteUsage = await waitForUsageData(accountId, server);
 
     expect(deleteUsage.accountId).to.equal(accountId);
-    expect(deleteUsage.bridgeId).to.equal(bridgeId);
+    expect(deleteUsage.id).to.equal(id);
     expect(deleteUsage.started).to.equal(createUsage.started);
     expect(deleteUsage.stopped).to.be.a.date();
   });
@@ -462,7 +462,7 @@ describe('Minio API', () => {
           name: "foo",
           directoryMap: "*:/stor/*"
         ) {
-          bridgeId, accountId, status
+          id, accountId, status
         }
       }`
     };
@@ -474,15 +474,15 @@ describe('Minio API', () => {
     });
 
     const createBridge = JSON.parse(create.payload).data.createBridge;
-    const bridgeId = createBridge.bridgeId;
+    const bridgeId = createBridge.id;
     expect(createBridge.status).to.equal('STARTING');
     const createUsage = await waitForUsageData(createBridge.accountId, server);
-    expect(createUsage.bridgeId).to.equal(bridgeId);
+    expect(createUsage.id).to.equal(bridgeId);
 
     const getQuery = { query: `
       query {
-        bridge(bridgeId: "${bridgeId}") {
-          bridgeId, status
+        bridge(id: "${bridgeId}") {
+          id, status
         }
       }`
     };
@@ -493,12 +493,12 @@ describe('Minio API', () => {
     });
     const getData = JSON.parse(getRes.payload).data.bridge;
 
-    expect(getData.bridgeId).to.equal(bridgeId);
+    expect(getData.id).to.equal(bridgeId);
     expect(getData.status).to.equal('RUNNING');
 
     const stopQuery = { query: `
       mutation {
-        stopBridge(bridgeId: "${bridgeId}")
+        stopBridge(id: "${bridgeId}")
       }`
     };
     const stopRes = await server.inject({
@@ -516,7 +516,7 @@ describe('Minio API', () => {
     });
     const data = JSON.parse(res.payload).data.bridge;
 
-    expect(data.bridgeId).to.equal(bridgeId);
+    expect(data.id).to.equal(bridgeId);
     expect(data.status === 'STOPPING' || data.status === 'STOPPED').to.equal(true);
   });
 });
