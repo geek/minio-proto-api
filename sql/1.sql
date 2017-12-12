@@ -94,7 +94,7 @@ BEGIN
     -- Associate the containers with the bridge.
     UPDATE bridges SET container1Id = container1, container2Id = container2,
                        status = 'RUNNING'
-    WHERE bridgeId = bridge_id AND accountId = account_id AND status = 'STARTING';
+    WHERE bridgeId = bridge_id AND accountId = account_id;
     SELECT ROW_COUNT() INTO rows_updated;
 
     -- If a bridge was found, add a usage record.
@@ -222,7 +222,7 @@ BEGIN
   START TRANSACTION;
     -- Set the bridge status to STOPPED.
     UPDATE bridges SET status = 'STOPPED'
-    WHERE bridgeId = bridge_id AND accountId = account_id AND status = 'STOPPING';
+    WHERE bridgeId = bridge_id AND accountId = account_id;
 
     -- Get the number of rows that were updated.
     SELECT ROW_COUNT() INTO rows_updated;
@@ -257,7 +257,7 @@ BEGIN
   START TRANSACTION;
     -- Set the bridge status to RUNNING.
     UPDATE bridges SET status = 'RUNNING'
-    WHERE bridgeId = bridge_id AND accountId = account_id AND status = 'STOPPED';
+    WHERE bridgeId = bridge_id AND accountId = account_id;
 
     -- Get the number of rows that were updated.
     SELECT ROW_COUNT() INTO rows_updated;
