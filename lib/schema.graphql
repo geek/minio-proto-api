@@ -3,6 +3,7 @@ enum BridgeState {
   RUNNING
   STOPPING
   STOPPED
+  REMOVING
 }
 
 type Bridge {
