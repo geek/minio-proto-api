@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS bridges (
   sshKeyName VARCHAR(255) NOT NULL,   -- name of public key stored on account
   sshKeyId VARCHAR(255) NOT NULL,     -- key id of public key
   directoryMap TEXT DEFAULT NULL,     -- s3 bucket to manta directory mapping
-  status ENUM('STARTING', 'RUNNING', 'STOPPING', 'STOPPED') NOT NULL,
+  status ENUM('STARTING', 'RUNNING', 'STOPPING', 'STOPPED', 'REMOVING') NOT NULL,
   PRIMARY KEY (bridgeId),
   UNIQUE KEY (name)
 );
@@ -195,7 +195,7 @@ DELIMITER $$
 CREATE PROCEDURE update_bridge_status (
   bridge_id CHAR(36),
   account_id CHAR(36),
-  new_status ENUM('STARTING', 'RUNNING', 'STOPPING', 'STOPPED')
+  new_status ENUM('STARTING', 'RUNNING', 'STOPPING', 'STOPPED', 'REMOVING')
 )
 BEGIN
   UPDATE bridges SET status = new_status
