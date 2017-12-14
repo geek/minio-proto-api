@@ -19,6 +19,7 @@ type Bridge {
 
 type Query {
   bridge(id: ID, name: String): Bridge,
+  doesBridgeExist(name: String): Boolean,
   bridges: [Bridge]
 }
 

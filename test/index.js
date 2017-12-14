@@ -352,6 +352,57 @@ describe('Minio API', () => {
     expect(data.directoryMap).to.equal('*:/stor/*');
   });
 
+  describe('doesBridgeExist()', () => {
+    it('returns true when a bridge exists', { timeout: 20000 }, async () => {
+      const server = await createServer();
+      const mutation = { query: `
+        mutation {
+          createBridge(
+            name: "fubar",
+            directoryMap: "*:/stor/*"
+          ) {
+            id
+          }
+        }`
+      };
+
+      await server.inject({
+        method: 'POST',
+        url: '/graphql',
+        payload: mutation
+      });
+      const query = { query: `
+        query {
+          doesBridgeExist(name: "fubar")
+        }`
+      };
+      const res = await server.inject({
+        method: 'POST',
+        url: '/graphql',
+        payload: query
+      });
+      const data = JSON.parse(res.payload).data.doesBridgeExist;
+      expect(data).to.equal(true);
+    });
+
+    it('returns false when a bridge does\'t exist', { timeout: 20000 }, async () => {
+      const server = await createServer();
+
+      const query = { query: `
+        query {
+          doesBridgeExist(name: "okaydokey")
+        }`
+      };
+      const res = await server.inject({
+        method: 'POST',
+        url: '/graphql',
+        payload: query
+      });
+      const data = JSON.parse(res.payload).data.doesBridgeExist;
+      expect(data).to.equal(false);
+    });
+  });
+
   it('lists all bridges for user', { timeout: 20000 }, async () => {
     const server = await createServer();
     const mutation = { query: `

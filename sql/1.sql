@@ -126,6 +126,19 @@ END$$
 DELIMITER ;
 
 
+DROP PROCEDURE IF EXISTS does_bridge_exist_by_name;
+DELIMITER $$
+
+CREATE PROCEDURE does_bridge_exist_by_name (
+  bridge_name VARCHAR(255)
+)
+BEGIN
+  SELECT 1
+  FROM bridges WHERE name = bridge_name;
+END$$
+
+DELIMITER ;
+
 DROP PROCEDURE IF EXISTS get_bridge_by_name;
 DELIMITER $$
 
