@@ -34,7 +34,7 @@ async function main () {
         }
       }
     },
-    HapiPino,
+    //HapiPino,
     {
       plugin: Api,
       options: {
