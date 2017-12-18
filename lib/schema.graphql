@@ -17,18 +17,34 @@ type Bridge {
   status: BridgeState!
 }
 
+type Account {
+  id: ID!
+  isAdmin: Boolean
+}
+
 type Query {
-  bridge(id: ID, name: String): Bridge,
-  doesBridgeExist(name: String): Boolean,
+  bridge(id: ID, name: String): Bridge
+  doesBridgeExist(name: String): Boolean
   bridges: [Bridge]
+  accounts: [Account]
+  account(id: ID!): Account
 }
 
 type Mutation {
   createBridge (
     name: String!
     directoryMap: String
-  ): Bridge,
-  deleteBridge (id: ID!): Bridge,
-  stopBridge (id: ID!): Bridge,
+  ): Bridge
+  deleteBridge (id: ID!): Bridge
+  stopBridge (id: ID!): Bridge
   resumeBridge (id: ID!): Bridge
+  createAccount (
+    id: ID!
+    isAdmin: Boolean!
+  ): Account
+  updateAccount (
+    id: ID!
+    isAdmin: Boolean!
+  ): Account
+  deleteAccount (id: ID!): Account
 }

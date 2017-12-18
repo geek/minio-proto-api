@@ -28,6 +28,7 @@ CREATE TABLE IF NOT EXISTS bridge_usage (
 
 CREATE TABLE IF NOT EXISTS accounts (
   accountId CHAR(36) NOT NULL,
+  isAdmin INT DEFAULT 0,
   PRIMARY KEY (accountId)
 );
 
@@ -43,6 +44,93 @@ BEGIN
   -- According to Stack Overflow, this is a fast way to check existence.
   -- https://stackoverflow.com/questions/1676551/best-way-to-test-if-a-row-exists-in-a-mysql-table
   SELECT EXISTS(SELECT 1 FROM accounts WHERE accountId = account_id LIMIT 1);
+END$$
+
+DELIMITER ;
+
+
+DROP PROCEDURE IF EXISTS is_account_admin;
+DELIMITER $$
+
+
+CREATE PROCEDURE is_account_admin (
+  account_id CHAR(36)
+)
+BEGIN
+  SELECT EXISTS(SELECT 1 FROM accounts WHERE accountId = account_id AND isAdmin = 1 LIMIT 1);
+END$$
+
+DELIMITER ;
+
+
+DROP PROCEDURE IF EXISTS get_account;
+DELIMITER $$
+
+
+CREATE PROCEDURE get_account (
+  account_id CHAR(36)
+)
+
+BEGIN
+  SELECT accountId, isAdmin FROM accounts WHERE accountId = account_id;
+END$$
+
+DELIMITER ;
+
+
+DROP PROCEDURE IF EXISTS list_accounts;
+DELIMITER $$
+
+
+CREATE PROCEDURE list_accounts ()
+BEGIN
+  SELECT accountId, isAdmin FROM accounts;
+END$$
+
+DELIMITER ;
+
+
+DROP PROCEDURE IF EXISTS create_account;
+DELIMITER $$
+
+
+CREATE PROCEDURE create_account (
+  account_id CHAR(36),
+  is_admin INT
+)
+BEGIN
+  INSERT INTO accounts (accountId, isAdmin)
+  VALUES (account_id, is_admin);
+END$$
+
+DELIMITER ;
+
+
+DROP PROCEDURE IF EXISTS update_account;
+DELIMITER $$
+
+
+CREATE PROCEDURE update_account (
+  account_id CHAR(36),
+  is_admin INT
+)
+BEGIN
+  UPDATE accounts SET isAdmin = is_admin
+  WHERE accountId = account_id;
+END$$
+
+DELIMITER ;
+
+
+DROP PROCEDURE IF EXISTS delete_account;
+DELIMITER $$
+
+
+CREATE PROCEDURE delete_account (
+  account_id CHAR(36)
+)
+BEGIN
+  DELETE FROM accounts WHERE accountId = account_id;
 END$$
 
 DELIMITER ;
