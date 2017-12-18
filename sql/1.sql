@@ -130,7 +130,22 @@ CREATE PROCEDURE delete_account (
   account_id CHAR(36)
 )
 BEGIN
-  DELETE FROM accounts WHERE accountId = account_id;
+  DECLARE rows_deleted INT;
+  DECLARE is_admin INT;
+  DECLARE EXIT HANDLER FOR SQLEXCEPTION
+  BEGIN
+    ROLLBACK;
+  END;
+
+  START TRANSACTION;
+    SELECT isAdmin INTO is_admin FROM accounts WHERE accountId = account_id;
+
+    -- Delete the account.
+    DELETE FROM accounts WHERE accountId = account_id;
+    SELECT ROW_COUNT() INTO rows_deleted;
+
+    SELECT rows_deleted, is_admin;
+  COMMIT;
 END$$
 
 DELIMITER ;

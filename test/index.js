@@ -853,7 +853,7 @@ describe('Minio API', () => {
 
       const deleteMutation = { query: `
         mutation {
-          deleteAccount(id: "${accountToCreate.id}") { id }
+          deleteAccount(id: "${accountToCreate.id}") { id, isAdmin }
         }
       `};
       const deleteRes = await server.inject({
@@ -861,8 +861,10 @@ describe('Minio API', () => {
         url: '/graphql',
         payload: deleteMutation
       });
+
       const deleteAccount = JSON.parse(deleteRes.payload).data.deleteAccount;
       expect(deleteAccount.id).to.equal(accountToCreate.id);
+      expect(deleteAccount.isAdmin).to.equal(accountToCreate.isAdmin);
     });
   });
 });
