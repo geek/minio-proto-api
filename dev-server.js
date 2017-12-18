@@ -2,7 +2,7 @@
 
 const Fs = require('fs');
 const Hapi = require('hapi');
-const HapiPino = require('hapi-pino');
+// const HapiPino = require('hapi-pino');
 const Inert = require('inert');
 const Sso = require('minio-proto-auth');
 const Api = require('./');
@@ -34,11 +34,11 @@ async function main () {
         }
       }
     },
-    //HapiPino,
+    // HapiPino,
     {
       plugin: Api,
       options: {
-        accounts: Fs.readFileSync('./.allowed', 'utf8'),
+        admins: Fs.readFileSync('./.allowed', 'utf8'),
         db: {
           user: 'test-user',
           password: 'test-pass',

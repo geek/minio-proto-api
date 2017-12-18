@@ -14,6 +14,32 @@ const { describe, it, before, after } = lab;
 const { expect } = require('code');
 
 
+const authAccount = {
+  id: Uuid.v4(),
+  login: 'barbar',
+  email: 'barbar@example.com',
+  companyName: 'Example Inc',
+  firstName: 'BarBar',
+  lastName: 'Jinks',
+  phone: '123-456-7890',
+  updated: '2015-12-21T11:48:54.884Z',
+  created: '2015-12-21T11:48:54.884Z'
+};
+
+const adminAccount = {
+  id: Uuid.v4(),
+  login: 'admin',
+  email: 'admin@example.com',
+  updated: '2015-12-21T11:48:54.884Z',
+  created: '2015-12-21T11:48:54.884Z'
+};
+const fingerprint = 'bb:0d:44:47:7c:01:95:89:6e:a4:6c:29:68:b4:4b:d0';
+let cloudapiServer = null;
+process.env.SDC_KEY_ID = fingerprint;
+process.env.SDC_ACCOUNT = 'admin';
+process.env.SDC_KEY_PATH = Path.join(__dirname, 'key-fixture');
+
+
 const ContainerMock = class {
   constructor () {
     this.id = Uuid.v4();
@@ -60,21 +86,6 @@ require.cache[require.resolve('../lib/docker')].exports = {
 const Api = require('../');
 
 
-const authAccount = {
-  id: Uuid.v4(),
-  login: 'barbar',
-  email: 'barbar@example.com',
-  companyName: 'Example Inc',
-  firstName: 'BarBar',
-  lastName: 'Jinks',
-  phone: '123-456-7890',
-  updated: '2015-12-21T11:48:54.884Z',
-  created: '2015-12-21T11:48:54.884Z'
-};
-const fingerprint = 'bb:0d:44:47:7c:01:95:89:6e:a4:6c:29:68:b4:4b:d0';
-let cloudapiServer = null;
-
-
 async function createServer (options) {
   const server = Hapi.server();
   const cloudapiUrl = `http://localhost:${cloudapiServer.info.port}`;
@@ -89,6 +100,7 @@ async function createServer (options) {
 
   options = Object.assign({
     accounts: authAccount.id,
+    admins: adminAccount.id,
     db: {
       user: 'test-user',
       password: 'test-pass',
@@ -127,29 +139,17 @@ async function createServer (options) {
   server.auth.default('sso');
 
   const barrier = new Barrier();
-  server.app.mysql.query('CALL delete_all_accounts_from_table()', (err) => {
+  server.app.mysql.query('CALL delete_all_bridges_from_table()', (err) => {
     if (err) {
       return barrier.pass(err);
     }
 
-    server.app.mysql.query('CALL delete_all_bridges_from_table()', (err) => {
+    server.app.mysql.query('CALL delete_all_bridge_usage_from_table()', (err) => {
       if (err) {
         return barrier.pass(err);
       }
 
-      server.app.mysql.query('CALL delete_all_bridge_usage_from_table()', (err) => {
-        if (err) {
-          return barrier.pass(err);
-        }
-
-        server.app.mysql.query(`REPLACE INTO accounts VALUES ('${authAccount.id}');`, (err) => {
-          if (err) {
-            return barrier.pass(err);
-          }
-
-          barrier.pass(server);
-        });
-      });
+      barrier.pass(server);
     });
   });
 
@@ -157,14 +157,14 @@ async function createServer (options) {
 }
 
 
-function createCloudapiServer () {
+function createCloudapiServer (isAdmin) {
   const server = Hapi.server();
 
   server.route({
     method: 'GET',
     path: '/my',
     handler: function (request, h) {
-      return authAccount;
+      return isAdmin ? adminAccount : authAccount;
     }
   });
 
@@ -674,5 +674,195 @@ describe('Minio API', () => {
 
     expect(data.id).to.equal(bridgeId);
     expect(data.status === 'STOPPING' || data.status === 'STOPPED').to.equal(true);
+  });
+
+  describe('account administration', () => {
+    it('throws when the user isn\'t an admin', { timeout: 20000 }, async () => {
+      const server = await createServer();
+
+      const query = { query: `
+        query {
+          account(id: "${authAccount.id}") { id }
+        }`
+      };
+      const res = await server.inject({
+        method: 'POST',
+        url: '/graphql',
+        payload: query
+      });
+      const data = JSON.parse(res.payload);
+      expect(data.errors[0].message).to.contain('authorized');
+    });
+
+    it('can get an account as an admin user', async () => {
+      await cloudapiServer.stop();
+      cloudapiServer = createCloudapiServer(true);
+      await cloudapiServer.start();
+      const server = await createServer();
+
+      const query = { query: `
+        query {
+          account(id: "${authAccount.id}") { id, isAdmin }
+        }`
+      };
+      const res = await server.inject({
+        method: 'POST',
+        url: '/graphql',
+        payload: query
+      });
+      const account = JSON.parse(res.payload).data.account;
+      expect(account.id).to.equal(authAccount.id);
+      expect(account.isAdmin).to.equal(false);
+    });
+
+    it('can list accounts as an admin user', async () => {
+      await cloudapiServer.stop();
+      cloudapiServer = createCloudapiServer(true);
+      await cloudapiServer.start();
+      const server = await createServer();
+
+      const query = { query: `
+        query {
+          accounts { id, isAdmin }
+        }`
+      };
+      const res = await server.inject({
+        method: 'POST',
+        url: '/graphql',
+        payload: query
+      });
+      const accounts = JSON.parse(res.payload).data.accounts;
+      expect(accounts.length).to.be.greaterThan(1);
+    });
+
+    it('can create an account as an admin user', async () => {
+      await cloudapiServer.stop();
+      cloudapiServer = createCloudapiServer(true);
+      await cloudapiServer.start();
+      const server = await createServer();
+      const accountToCreate = {
+        id: Uuid.v4(),
+        isAdmin: false
+      };
+
+      const mutation = { query: `
+        mutation {
+          createAccount(id: "${accountToCreate.id}", isAdmin: ${accountToCreate.isAdmin}) { id }
+        }
+      `};
+      const createRes = await server.inject({
+        method: 'POST',
+        url: '/graphql',
+        payload: mutation
+      });
+
+      const createAccount = JSON.parse(createRes.payload).data.createAccount;
+      expect(createAccount.id).to.equal(accountToCreate.id);
+
+      const query = { query: `
+        query {
+          account(id: "${createAccount.id}") { id, isAdmin }
+        }`
+      };
+      const res = await server.inject({
+        method: 'POST',
+        url: '/graphql',
+        payload: query
+      });
+      const account = JSON.parse(res.payload).data.account;
+      expect(account.id).to.equal(createAccount.id);
+      expect(account.isAdmin).to.equal(false);
+    });
+
+    it('can update an account as an admin user', async () => {
+      await cloudapiServer.stop();
+      cloudapiServer = createCloudapiServer(true);
+      await cloudapiServer.start();
+      const server = await createServer();
+      const accountToCreate = {
+        id: Uuid.v4(),
+        isAdmin: false
+      };
+
+      const createMutation = { query: `
+        mutation {
+          createAccount(id: "${accountToCreate.id}", isAdmin: ${accountToCreate.isAdmin}) { id }
+        }
+      `};
+      const createRes = await server.inject({
+        method: 'POST',
+        url: '/graphql',
+        payload: createMutation
+      });
+
+      const createAccount = JSON.parse(createRes.payload).data.createAccount;
+      expect(createAccount.id).to.equal(accountToCreate.id);
+
+      const updateMutation = { query: `
+        mutation {
+          updateAccount(id: "${accountToCreate.id}", isAdmin: ${!accountToCreate.isAdmin}) { id }
+        }
+      `};
+      const updateRes = await server.inject({
+        method: 'POST',
+        url: '/graphql',
+        payload: updateMutation
+      });
+
+      const updateAccount = JSON.parse(updateRes.payload).data.updateAccount;
+      expect(updateAccount.id).to.equal(accountToCreate.id);
+
+      const query = { query: `
+        query {
+          account(id: "${createAccount.id}") { id, isAdmin }
+        }`
+      };
+      const res = await server.inject({
+        method: 'POST',
+        url: '/graphql',
+        payload: query
+      });
+      const account = JSON.parse(res.payload).data.account;
+      expect(account.id).to.equal(createAccount.id);
+      expect(account.isAdmin).to.equal(true);
+    });
+
+    it('can delete an account as an admin user', async () => {
+      await cloudapiServer.stop();
+      cloudapiServer = createCloudapiServer(true);
+      await cloudapiServer.start();
+      const server = await createServer();
+      const accountToCreate = {
+        id: Uuid.v4(),
+        isAdmin: false
+      };
+
+      const createMutation = { query: `
+        mutation {
+          createAccount(id: "${accountToCreate.id}", isAdmin: ${accountToCreate.isAdmin}) { id }
+        }
+      `};
+      const createRes = await server.inject({
+        method: 'POST',
+        url: '/graphql',
+        payload: createMutation
+      });
+
+      const createAccount = JSON.parse(createRes.payload).data.createAccount;
+      expect(createAccount.id).to.equal(accountToCreate.id);
+
+      const deleteMutation = { query: `
+        mutation {
+          deleteAccount(id: "${accountToCreate.id}") { id }
+        }
+      `};
+      const deleteRes = await server.inject({
+        method: 'POST',
+        url: '/graphql',
+        payload: deleteMutation
+      });
+      const deleteAccount = JSON.parse(deleteRes.payload).data.deleteAccount;
+      expect(deleteAccount.id).to.equal(accountToCreate.id);
+    });
   });
 });
