@@ -1,6 +1,6 @@
 {
   "name": "minio-proto-api",
-  "version": "1.9.1",
+  "version": "1.10.0",
   "description": "",
   "main": "./lib",
   "scripts": {
