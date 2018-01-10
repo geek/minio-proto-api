@@ -39,6 +39,8 @@ async function main () {
       plugin: Api,
       options: {
         admins: Fs.readFileSync('./.allowed', 'utf8'),
+        authStrategy: 'sso',
+        graphiAuthStrategy: 'sso',
         db: {
           user: 'test-user',
           password: 'test-pass',

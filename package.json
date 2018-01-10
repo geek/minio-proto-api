@@ -27,7 +27,7 @@
     "cb-barrier": "1.0.2",
     "cloudflare": "2.2.0",
     "dockerode": "2.5.3",
-    "graphi": "5.0.1",
+    "graphi": "5.3.x",
     "graphql-tools": "2.12.0",
     "keypair": "1.0.1",
     "mysql": "2.15.0",
